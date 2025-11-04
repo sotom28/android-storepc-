@@ -12,6 +12,10 @@ sealed class Screen(val route: String){
     object carrito : Screen(route = "carrito")
     object detalle : Screen(route = "detalle")
 
+    // Rutas para el CRUD de productos
+    object agregarProducto : Screen(route = "agregarProducto")
+    object editarProducto : Screen(route = "editarProducto/{productoId}")
+
     // Agregadas rutas para menú de cliente
     object Pedidos : Screen(route = "pedidos")
     object Datos : Screen(route = "datos")

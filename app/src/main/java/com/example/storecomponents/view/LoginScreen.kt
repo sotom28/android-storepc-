@@ -2,9 +2,10 @@ package com.example.storecomponents.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun LoginScreen(
+    modifier: Modifier = Modifier,
     onLogin: (usernameOrEmail: String, password: String) -> Unit = { _, _ -> }
 ) {
     val focusManager = LocalFocusManager.current
@@ -38,10 +40,10 @@ fun LoginScreen(
     val canSubmit = userOrEmail.isNotBlank() && isPasswordValid
 
     Column(
-        modifier = Modifier
+        modifier = modifier
+            .fillMaxWidth()
             .padding(16.dp)
-            .fillMaxHeight()
-            .fillMaxWidth(),
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -87,8 +89,23 @@ fun LoginScreen(
             Text(text = "Iniciar sesión")
         }
 
+        // Botones de prueba para debugging: entradas rápidas
+        Button(
+            onClick = { onLogin("cliente1", "cliente123") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Entrar como cliente (prueba)")
+        }
+
+        Button(
+            onClick = { onLogin("admin", "admin123") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Entrar como admin (prueba)")
+        }
+
         // Hint para pruebas
-        Text(text = "Prueba: cliente -> user: 'cliente 1' pass: 'cliente123' | admin -> user contains 'admin' and pass 'admin123'", style = MaterialTheme.typography.bodySmall)
+        Text(text = "Prueba: cliente -> user: 'cliente1' pass: 'cliente123' | admin -> user contains 'admin' and pass 'admin123'", style = MaterialTheme.typography.bodySmall)
     }
 }
 

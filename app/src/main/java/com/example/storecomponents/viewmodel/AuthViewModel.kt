@@ -42,14 +42,16 @@ class AuthViewModel(
     }
 
     // Nuevo método: login por username (credenciales de ejemplo)
-    // usuario ejemplo cliente: username = "cliente 1", password = "cliente123"
+    // usuario ejemplo cliente: username = "cliente 1" o "cliente1" o correo "cliente@store.com", password = "cliente123"
     // usuario ejemplo admin: username contiene "admin" y password == "admin123"
     fun loginByUsername(username: String, password: String) {
         viewModelScope.launch {
             _estadoAuth.value = EstadoAuth.Cargando
 
-            // caso cliente de ejemplo
-            if (username == "cliente 1" && password == "cliente123") {
+            val normalized = username.trim().lowercase()
+
+            // caso cliente de ejemplo (acepta varias variantes)
+            if ((normalized.contains("cliente") || normalized == "cliente@store.com") && password == "cliente123") {
                 val user = Usuarios(
                     id = 2,
                     nombre = username,
@@ -59,11 +61,12 @@ class AuthViewModel(
                 )
                 _role.value = UserRole.CLIENT
                 _estadoAuth.value = EstadoAuth.Exito(user)
+                println("AuthViewModel: loginByUsername -> SUCCESS CLIENT normalized='$normalized'")
                 return@launch
             }
 
             // caso admin de ejemplo
-            if (username.contains("admin", ignoreCase = true) && password == "admin123") {
+            if (normalized.contains("admin") && password == "admin123") {
                 val user = Usuarios(
                     id = 1,
                     nombre = username,
@@ -73,6 +76,7 @@ class AuthViewModel(
                 )
                 _role.value = UserRole.ADMIN
                 _estadoAuth.value = EstadoAuth.Exito(user)
+                println("AuthViewModel: loginByUsername -> SUCCESS ADMIN normalized='$normalized'")
                 return@launch
             }
 
@@ -82,9 +86,11 @@ class AuthViewModel(
                 val user = resultado.getOrNull()!!
                 _role.value = if (user.role == Userole.ADMIN) UserRole.ADMIN else UserRole.CLIENT
                 _estadoAuth.value = EstadoAuth.Exito(user)
+                println("AuthViewModel: loginByUsername -> SUCCESS REPO username='$username'")
             } else {
                 _role.value = UserRole.NOME
                 _estadoAuth.value = EstadoAuth.Error("Credenciales inválidas")
+                println("AuthViewModel: loginByUsername -> FAILED normalized='$normalized'")
             }
         }
     }

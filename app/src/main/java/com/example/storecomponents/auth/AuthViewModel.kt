@@ -1,30 +1,31 @@
 package com.example.storecomponents.auth
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-enum class UserRole { NONE, CLIENT, ADMIN }
+data class AuthState(
+    val role: String? = null,
+    val error: String? = null
+)
 
 class AuthViewModel : ViewModel() {
-    var isLoggedIn by mutableStateOf(false)
-        private set
-    var role by mutableStateOf(UserRole.NONE)
-        private set
-    var userEmail by mutableStateOf("")
-        private set
 
-    fun login(email: String, password: String) {
-        userEmail = email
-        isLoggedIn = true
-        role = if (email.contains("admin")) UserRole.ADMIN else UserRole.CLIENT
+    private val _authState = MutableStateFlow(AuthState())
+    val authState = _authState.asStateFlow()
+
+    fun login(username: String, password: String) {
+        // Lógica de autenticación de ejemplo
+        if (username.contains("admin", ignoreCase = true) && password == "admin123") {
+            _authState.value = AuthState(role = "admin")
+        } else if (username == "cliente1" && password == "cliente123") {
+            _authState.value = AuthState(role = "cliente")
+        } else {
+            _authState.value = AuthState(error = "Credenciales inválidas")
+        }
     }
 
     fun logout() {
-        isLoggedIn = false
-        role = UserRole.NONE
-        userEmail = ""
+        _authState.value = AuthState()
     }
 }
-

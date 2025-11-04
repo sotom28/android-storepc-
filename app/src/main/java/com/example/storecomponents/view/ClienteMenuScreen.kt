@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,12 +20,13 @@ data class MenuItem(val title: String, val route: String)
 
 
 @Composable
-fun ClienteMenuScreen(onNavigate: (String) -> Unit, onLogout: () -> Unit = {}) {
+fun ClienteMenuScreen(onNavigate: (String) -> Unit = {}, onLogout: () -> Unit = {}) {
     val items = listOf(
         MenuItem("Productos", Screen.ProductoList.route),
         MenuItem("Mi Carrito", Screen.carrito.route),
         MenuItem("Mis Pedidos", Screen.Pedidos.route),
-        MenuItem("Mi Perfil", Screen.Datos.route)
+        MenuItem("Mi Perfil", Screen.Datos.route),
+        MenuItem("Gestión de Productos", "gestion_productos")
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -34,7 +36,7 @@ fun ClienteMenuScreen(onNavigate: (String) -> Unit, onLogout: () -> Unit = {}) {
             style = MaterialTheme.typography.titleLarge
         )
 
-        LazyColumn {
+        LazyColumn(modifier = Modifier.fillMaxHeight()) {
             items(items) { item ->
                 Column(
                     modifier = Modifier
