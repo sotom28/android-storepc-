@@ -13,7 +13,7 @@ class AuthRepository {
     // usuarios de ejemplo para autenticación
     private val usuariosList = mutableListOf(
         Usuarios(1, "admin", "admin@store.com", Userole.ADMIN, "admin1232"),
-        Usuarios(2, "cliente", "cliente@store.com", Userole.CLIENTE, "cliente1234")
+        Usuarios(2, "cliente", "cliente@store.com", Userole.CLIENT, "cliente1234")
     )
 
     // Función de login

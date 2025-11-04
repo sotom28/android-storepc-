@@ -64,6 +64,7 @@ dependencies {
 
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation(libs.androidx.media3.common.ktx)
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.5.4")
 
