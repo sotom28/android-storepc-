@@ -13,8 +13,8 @@ class AuthRepository {
 
     // usuarios de ejemplo para autenticación
     private val usuariosList = mutableListOf(
-        Usuarios(1, "admin", "admin@store.com", Userole.ADMIN, "admin1232"),
-        Usuarios(2, "cliente", "cliente@store.com", Userole.CLIENT, "cliente1234")
+        Usuarios(id = 1, nombre = "admin", correo = "admin@store.com", role = Userole.ADMIN, password = "admin123", confirmarPassword = "admin123", direccion = ""),
+        Usuarios(id = 2, nombre = "cliente", correo = "cliente@store.com", role = Userole.CLIENT, password = "cliente123", confirmarPassword = "cliente123", direccion = "")
     )
 
     // Exponer la lista de usuarios como StateFlow para UI de gestión

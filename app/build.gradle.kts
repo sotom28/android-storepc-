@@ -52,6 +52,15 @@ android {
 }
 
 dependencies {
+    // CameraX core
+    implementation("androidx.camera:camera-core:1.1.0")
+    implementation("androidx.camera:camera-camera2:1.1.0")
+    implementation("androidx.camera:camera-lifecycle:1.1.0")
+    implementation("androidx.camera:camera-view:1.0.0-alpha32")
+    implementation("androidx.camera:camera-extensions:1.0.0-alpha32")
+    // biometrica
+    implementation("androidx.biometric:biometric:1.1.0")
+
     // Compose
     implementation("androidx.compose.ui:ui:1.5.4")
     implementation("androidx.compose.material3:material3:1.1.2")
@@ -68,6 +77,7 @@ dependencies {
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.7.6")
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.androidx.camera.view)
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.5.4")
 

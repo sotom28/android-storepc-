@@ -1,4 +1,4 @@
-package com.example.storecomponents.view
+package com.example.storecomponents.view.cliente
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

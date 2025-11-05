@@ -57,7 +57,9 @@ class AuthViewModel(
                     nombre = username,
                     correo = "cliente@store.com",
                     role = Userole.CLIENT,
-                    password = password
+                    password = password,
+                    confirmarPassword = "",
+                    direccion = ""
                 )
                 _role.value = UserRole.CLIENT
                 _estadoAuth.value = EstadoAuth.Exito(user)
@@ -72,7 +74,9 @@ class AuthViewModel(
                     nombre = username,
                     correo = "admin@store.com",
                     role = Userole.ADMIN,
-                    password = password
+                    password = password,
+                    confirmarPassword = "",
+                    direccion = ""
                 )
                 _role.value = UserRole.ADMIN
                 _estadoAuth.value = EstadoAuth.Exito(user)
@@ -91,6 +95,42 @@ class AuthViewModel(
                 _role.value = UserRole.NOME
                 _estadoAuth.value = EstadoAuth.Error("Credenciales inválidas")
                 println("AuthViewModel: loginByUsername -> FAILED normalized='$normalized'")
+            }
+        }
+    }
+
+    // Nuevo: registrar y auto-logear
+    fun register(name: String, email: String, roleStr: String, password: String, confirmarPassword: String = "", direccion: String = "") {
+        viewModelScope.launch {
+            _estadoAuth.value = EstadoAuth.Cargando
+            try {
+                // determinar role
+                val role = if (roleStr.equals("admin", ignoreCase = true)) Userole.ADMIN else Userole.CLIENT
+                // calcular id nuevo
+                val existing = authRepository.obtenerTodosLosUsuarios()
+                val newId = (existing.maxOfOrNull { it.id } ?: 0) + 1
+                val nuevo = Usuarios(id = newId, nombre = name, correo = email, role = role, password = password, confirmarPassword = confirmarPassword, direccion = direccion)
+
+                val reg = authRepository.registro(nuevo)
+                if (reg.isSuccess) {
+                    // después de registrar, intentar login para activar la sesión
+                    val loginRes = authRepository.login(email, password)
+                    if (loginRes.isSuccess) {
+                        val user = loginRes.getOrNull()!!
+                        _role.value = if (user.role == Userole.ADMIN) UserRole.ADMIN else UserRole.CLIENT
+                        _estadoAuth.value = EstadoAuth.Exito(user)
+                    } else {
+                        _role.value = UserRole.NOME
+                        _estadoAuth.value = EstadoAuth.Error("Registro OK, pero login falló: ${loginRes.exceptionOrNull()?.message}")
+                    }
+                } else {
+                    _role.value = UserRole.NOME
+                    _estadoAuth.value = EstadoAuth.Error(reg.exceptionOrNull()?.message ?: "Error al registrar")
+                }
+
+            } catch (e: Exception) {
+                _role.value = UserRole.NOME
+                _estadoAuth.value = EstadoAuth.Error(e.message ?: "Error desconocido")
             }
         }
     }

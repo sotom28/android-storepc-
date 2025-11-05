@@ -57,10 +57,10 @@ fun GestionUsuariosScreen(usuariosViewModel: UsuariosViewModel = viewModel(), on
                 if (editingId == null) {
                     // generar id simple
                     val nextId = (usuarios.maxOfOrNull { it.id } ?: 0) + 1
-                    val nuevo = Usuarios(nextId, nombre, correo, role, password)
+                    val nuevo = Usuarios(nextId, nombre, correo, role, password, confirmarPassword = password)
                     usuariosViewModel.agregarUsuario(nuevo)
                 } else {
-                    val actualizado = Usuarios(editingId!!, nombre, correo, role, password)
+                    val actualizado = Usuarios(editingId!!, nombre, correo, role, password, confirmarPassword = password)
                     usuariosViewModel.actualizarUsuario(actualizado)
                     editingId = null
                 }

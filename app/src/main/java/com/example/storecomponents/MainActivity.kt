@@ -1,31 +1,38 @@
 package com.example.storecomponents
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.storecomponents.auth.AuthViewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.storecomponents.viewmodel.AuthViewModel
 import com.example.storecomponents.ui.theme.StorecomponentsTheme
 import com.example.storecomponents.view.AdminMenuScreen
-import com.example.storecomponents.view.ClienteMenuScreen
+import com.example.storecomponents.view.cliente.ClienteMenuScreen
 import com.example.storecomponents.view.ProductListScreen
 import com.example.storecomponents.view.GestionVentasScreen
+import com.example.storecomponents.view.ClienteOrdersScreen
+import com.example.storecomponents.view.RegisterScreen
 
 import com.example.storecomponents.view.GestionUsuarioScreen
 import com.example.storecomponents.view.LoginScreen
+import com.example.storecomponents.view.AppShell
 import com.example.storecomponents.navigation.Screen
+import androidx.fragment.app.FragmentActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,72 +40,104 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             StorecomponentsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val navController = rememberNavController()
-                    val authState by authViewModel.authState.collectAsState()
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = Screen.login.route,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable(Screen.login.route) {
-                            LoginScreen(
-                                onLogin = { email, password ->
-                                    authViewModel.login(email, password)
-                                }
-                            )
-                        }
-                        composable(Screen.clienteMenu.route) {
-                            ClienteMenuScreen(
-                                onNavigate = { route -> navController.navigate(route) },
-                                onLogout = {
-                                    authViewModel.logout()
-                                    navController.navigate(Screen.login.route) {
-                                        popUpTo(Screen.login.route) { inclusive = true }
-                                    }
-                                }
-                            )
-                        }
-                        composable(Screen.adminmenu.route) {
-                            AdminMenuScreen(
-                                onNavigate = { route -> navController.navigate(route) },
-                                onLogout = {
-                                    authViewModel.logout()
-                                    navController.navigate(Screen.login.route) {
-                                        popUpTo(Screen.login.route) { inclusive = true }
-                                    }
-                                }
-                            )
-                        }
-                        composable(Screen.productos.route) {
-                            // Mostrar la lista de productos
-                            ProductListScreen(onOpenProduct = { product -> /* navegar a detalle si está implementado */ })
-                        }
-                        composable(Screen.usuarios.route) {
-                            GestionUsuarioScreen(onNavigate = { route -> navController.navigate(route) })
-                        }
-                        composable(Screen.Pedidos.route) {
-                            GestionVentasScreen(onNavigate = { route -> navController.navigate(route) })
-                        }
-                    }
+                val context = LocalContext.current
 
-                    // Observe auth state changes to navigate
-                    when (authState.role) {
-                        "admin" -> navController.navigate(Screen.adminmenu.route) {
-                            popUpTo(Screen.login.route) { inclusive = true }
-                        }
-                        "cliente" -> navController.navigate(Screen.clienteMenu.route) {
-                            popUpTo(Screen.login.route) { inclusive = true }
-                        }
-                        else -> {
-                            if (authState.error != null) {
-                                // Optionally show a toast or a dialog with authState.error
-                                println("Authentication error: ${authState.error}")
+                // Observar rol para navegar automáticamente cuando cambie (login/registro)
+                val role by authViewModel.role.collectAsState()
+                LaunchedEffect(role) {
+                    when (role) {
+                        com.example.storecomponents.viewmodel.UserRole.ADMIN -> {
+                            navController.navigate(Screen.adminmenu.route) {
+                                popUpTo(Screen.login.route) { inclusive = true }
                             }
-                            if (navController.currentBackStackEntry?.destination?.route != Screen.login.route) {
-                                navController.navigate(Screen.login.route) {
-                                    popUpTo(0) { inclusive = true }
+                        }
+                        com.example.storecomponents.viewmodel.UserRole.CLIENT -> {
+                            navController.navigate(Screen.clienteMenu.route) {
+                                popUpTo(Screen.login.route) { inclusive = true }
+                            }
+                        }
+                        else -> { /* no-op */ }
+                    }
+                }
+
+                // Mostrar Toasts según estado de autenticación para ayudar a depurar botones de prueba
+                val estadoAuth by authViewModel.estadoAuth.collectAsState()
+                LaunchedEffect(estadoAuth) {
+                    when (estadoAuth) {
+                        is com.example.storecomponents.viewmodel.EstadoAuth.Exito -> {
+                            val user = (estadoAuth as com.example.storecomponents.viewmodel.EstadoAuth.Exito).usuario
+                            Toast.makeText(context, "Login OK: ${user.nombre}", Toast.LENGTH_SHORT).show()
+                        }
+                        is com.example.storecomponents.viewmodel.EstadoAuth.Error -> {
+                            val msg = (estadoAuth as com.example.storecomponents.viewmodel.EstadoAuth.Error).mensaje
+                            Toast.makeText(context, "Login failed: $msg", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> { /* no-op */ }
+                    }
+                }
+
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    AppShell(currentRoute = currentRoute, onNavigate = { route -> navController.navigate(route) }) { padding ->
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.login.route,
+                            modifier = Modifier.padding(padding)
+                        ) {
+                            composable(Screen.login.route) {
+                                LoginScreen(
+                                    onLogin = { emailOrUser, password ->
+                                        // intentar login por username o email (método flexible)
+                                        authViewModel.loginByUsername(emailOrUser, password)
+                                    },
+                                    onRegister = { navController.navigate(Screen.register.route) }
+                                )
+                            }
+                            composable(Screen.register.route) {
+                                RegisterScreen(onRegistered = {
+                                    // después de registrar volvemos al login (el registro puede auto-logear)
+                                    navController.popBackStack()
+                                }, authViewModel = authViewModel)
+                            }
+                            composable(Screen.clienteMenu.route) {
+                                ClienteMenuScreen(
+                                    onNavigate = { route -> navController.navigate(route) },
+                                    onLogout = {
+                                        authViewModel.cerrarSesion()
+                                        navController.navigate(Screen.login.route) {
+                                            popUpTo(Screen.login.route) { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
+                            composable(Screen.adminmenu.route) {
+                                AdminMenuScreen(
+                                    onNavigate = { route -> navController.navigate(route) },
+                                    onLogout = {
+                                        authViewModel.cerrarSesion()
+                                        navController.navigate(Screen.login.route) {
+                                            popUpTo(Screen.login.route) { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
+                            composable(Screen.productos.route) {
+                                // Mostrar la lista de productos
+                                ProductListScreen(onOpenProduct = { _ -> /* navegar a detalle si está implementado */ })
+                            }
+                            composable(Screen.usuarios.route) {
+                                GestionUsuarioScreen(onNavigate = { route -> navController.navigate(route) })
+                            }
+                            composable(Screen.Pedidos.route) {
+                                // Mostrar la pantalla adecuada según el role actual
+                                val roleInner by authViewModel.role.collectAsState()
+                                if (roleInner == com.example.storecomponents.viewmodel.UserRole.CLIENT) {
+                                    ClienteOrdersScreen(onNavigate = { route -> navController.navigate(route) })
+                                } else {
+                                    GestionVentasScreen(onNavigate = { route -> navController.navigate(route) })
                                 }
                             }
                         }

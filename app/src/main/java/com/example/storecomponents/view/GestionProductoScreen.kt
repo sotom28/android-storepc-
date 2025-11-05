@@ -85,7 +85,7 @@ fun GestionProductoScreen(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-
+        /* */
         OutlinedTextField(
             value = stock,
             onValueChange = { stock = it },

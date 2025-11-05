@@ -8,6 +8,7 @@ data class OrderModel(
     val productName: String,
     val quantity: Int,
     val assignedToId: Long? = null,
+    val buyerId: Long? = null,
     val status: String = "PENDIENTE"
 )
 
@@ -15,9 +16,9 @@ class OrdersViewModel : ViewModel() {
     private val _orders = mutableStateListOf<OrderModel>()
     val orders: List<OrderModel> get() = _orders
 
-    fun addOrder(productName: String, quantity: Int, assignedToId: Long?) {
+    fun addOrder(productName: String, quantity: Int, assignedToId: Long?, buyerId: Long? = null) {
         val newId = if (_orders.isEmpty()) 1L else (_orders.maxOf { it.id } + 1)
-        _orders.add(OrderModel(newId, productName, quantity, assignedToId, "PENDIENTE"))
+        _orders.add(OrderModel(newId, productName, quantity, assignedToId, buyerId, "PENDIENTE"))
     }
 
     fun removeOrder(id: Long) {
@@ -35,4 +36,3 @@ class OrdersViewModel : ViewModel() {
         if (idx >= 0) _orders[idx] = _orders[idx].copy(productName = productName, quantity = quantity)
     }
 }
-

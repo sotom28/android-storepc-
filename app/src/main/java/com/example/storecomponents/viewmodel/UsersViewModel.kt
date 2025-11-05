@@ -5,9 +5,12 @@ import androidx.lifecycle.ViewModel
 
 data class UserItemModel(
     val id: Long,
-    var name: String,
-    var role: String,
-    var isSalesManager: Boolean = false
+    val name: String,
+    val role: String,
+    val isSalesManager: Boolean = false,
+    val email: String? = null,
+    val password: String? = null,
+    val direccion: String? = null
 )
 
 class UsersViewModel : ViewModel() {
@@ -15,15 +18,16 @@ class UsersViewModel : ViewModel() {
     private val _users = mutableStateListOf<UserItemModel>()
     val users: List<UserItemModel> get() = _users
 
-    fun addUser(name: String, role: String) {
+    fun addUser(name: String, role: String, email: String? = null, password: String? = null, direccion: String? = null) {
         val newId = if (_users.isEmpty()) 1L else (_users.maxOf { it.id } + 1)
-        _users.add(UserItemModel(newId, name, role, false))
+        _users.add(UserItemModel(newId, name, role, false, email, password, direccion))
     }
 
     fun updateUser(id: Long, name: String, role: String) {
         val idx = _users.indexOfFirst { it.id == id }
         if (idx >= 0) {
-            _users[idx] = _users[idx].copy(name = name, role = role)
+            val u = _users[idx]
+            _users[idx] = u.copy(name = name, role = role)
         }
     }
 
@@ -40,4 +44,3 @@ class UsersViewModel : ViewModel() {
 
     fun getSalesManager(): UserItemModel? = _users.firstOrNull { it.isSalesManager }
 }
-

@@ -7,7 +7,9 @@ data class Usuarios(
     var nombre : String = "",
     var correo : String = "",
     val role: Userole = Userole.CLIENT,
-    var password : String
+    var password : String,
+    var confirmarPassword : String,
+    var direccion : String = ""
 
 )
 // Definición de roles de usuario
