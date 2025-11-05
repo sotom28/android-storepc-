@@ -23,7 +23,7 @@ import com.example.storecomponents.view.AdminMenuScreen
 import com.example.storecomponents.view.cliente.ClienteMenuScreen
 import com.example.storecomponents.view.ProductListScreen
 import com.example.storecomponents.view.GestionVentasScreen
-import com.example.storecomponents.view.ClienteOrdersScreen
+import com.example.storecomponents.view.cliente.ClienteOrdersScreen
 import com.example.storecomponents.view.RegisterScreen
 
 import com.example.storecomponents.view.GestionUsuarioScreen
