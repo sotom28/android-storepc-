@@ -32,6 +32,7 @@ fun BiometricScreen(onSuccess: () -> Unit = {}) {
                 .setSubtitle("Usa tu huella o rostro para continuar")
                 .setNegativeButtonText("Cancelar")
                 .build()
+
             val biometricPrompt = biometricHelper.createPrompt(activity,
                 object : BiometricPrompt.AuthenticationCallback() {
                     override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
