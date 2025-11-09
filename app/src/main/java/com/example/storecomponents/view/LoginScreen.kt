@@ -56,7 +56,8 @@ fun LoginScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // ahora permitimos login con usuario o correo; validamos solo la longitud de password
-    val isPasswordValid = password.length >= 8
+    // Alineado con RegisterScreen (mínimo 6 caracteres)
+    val isPasswordValid = password.length >= 6
     val canSubmit = userOrEmail.isNotBlank() && isPasswordValid
 
     Column(
@@ -138,13 +139,7 @@ fun LoginScreen(
             Text(text = "Registrar")
         }
 
-        // Botón para iniciar sesión con cámara
-        Button(
-            onClick = { showCamera = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Iniciar sesión con cámara")
-        }
+
 
         // Botón para iniciar sesión con huella/biometría
         Button(

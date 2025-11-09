@@ -39,7 +39,7 @@ fun ClienteOrdersScreen(
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text = "Crear Compra", style = MaterialTheme.typography.titleSmall)
 
-                OutlinedTextField(
+                OutlinedTextField( //
                     value = productName,
                     onValueChange = { productName = it },
                     label = { Text("Nombre del Producto") },

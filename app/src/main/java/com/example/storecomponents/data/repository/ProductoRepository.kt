@@ -1,60 +1,48 @@
 package com.example.storecomponents.data.repository
 
+import android.content.Context
+import androidx.core.content.edit
 import com.example.storecomponents.data.model.Producto
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
-class ProductoRepository {
+class ProductoRepository(private val context: Context) {
+    private val prefs by lazy { context.getSharedPreferences("productos", Context.MODE_PRIVATE) }
+    private val gson = Gson()
+    private val key = "productos"
 
-    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
-    val productos: StateFlow<List<Producto>> = _productos.asStateFlow()
-
-    init {
-        // Datos de productos de ejemplo (ASCII sencillo)
-        val productosIniciales = listOf(
-            Producto("1", "Producto 1", "Descripcion 1", 10.0, 5, "Categoria1", ""),
-            Producto("2", "Producto 2", "Descripcion 2", 20.0, 10, "Categoria2", ""),
-            Producto("3", "Producto 3", "Descripcion 3", 30.0, 3, "Categoria3", "")
-        )
-        _productos.value = productosIniciales
+    private fun locallist(): MutableList<Producto> {
+        val json = prefs.getString(key, null) ?: return mutableListOf()
+        val type = object : TypeToken<List<Producto>>() {}.type
+        return gson.fromJson<List<Producto>>(json, type).toMutableList()
     }
 
-    // Obtener todos los productos
-    fun obtenerTodosLosProductos(): List<Producto> = _productos.value
-
-    // Obtener un producto por id
-    fun obtenerProductoPorId(id: String): Producto? {
-        return _productos.value.find { it.id == id }
-    }
-
-    // Agregar un producto
-    fun agregarProducto(producto: Producto): Result<Unit> {
-        return try {
-            _productos.value = _productos.value + producto
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+    private fun savelist(list: MutableList<Producto>) {
+        prefs.edit {
+            putString(key, gson.toJson(list))
         }
     }
 
-    // Actualizar un producto (por id)
-    fun actualizarProducto(producto: Producto): Result<Unit> {
-        return try {
-            _productos.value = _productos.value.map { if (it.id == producto.id) producto else it }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+    fun getALL(): MutableList<Producto> = locallist()
+
+    fun add(producto: Producto) {
+        val list = locallist()
+        list.add(producto)
+        savelist(list)
+    }
+
+    fun update(producto: Producto) {
+        val list = locallist()
+        val index = list.indexOfFirst { it.id == producto.id }
+        if (index != -1) {
+            list[index] = producto
+            savelist(list)
         }
     }
 
-    // Eliminar un producto por id
-    fun eliminarProducto(productoId: String): Result<Unit> {
-        return try {
-            _productos.value = _productos.value.filter { it.id != productoId }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    fun delete(productoId: String) {
+        val list = locallist()
+        val updatedList = list.filter { it.id != productoId }.toMutableList()
+        savelist(updatedList)
     }
 }

@@ -36,7 +36,8 @@ fun AdminMenuScreen(
         AdminMenuItem("Usuarios", Screen.usuarios.route, Icons.Filled.Person)
     ),
     bottomNavItems: List<AdminMenuItem> = listOf(
-        AdminMenuItem("Inicio", "home", Icons.Filled.ShoppingCart),
+        // Cambiado: usar la ruta existente Screen.adminmenu.route en vez de "home"
+        AdminMenuItem("Inicio", Screen.adminmenu.route, Icons.Filled.ShoppingCart),
         AdminMenuItem("Gestión de Ventas", Screen.Pedidos.route, Icons.AutoMirrored.Filled.List),
         AdminMenuItem("Usuarios", Screen.usuarios.route, Icons.Filled.Person)
     ),
@@ -94,7 +95,6 @@ fun AdminMenuScreen(
                         selected = selectedRoute == nav.route,
                         onClick = {
                             selectedRoute = nav.route
-
                             // Navegar directamente; la pantalla de gestión mostrará info si no hay gestor asignado
                             onNavigate(nav.route)
                         },

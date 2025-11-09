@@ -1,4 +1,4 @@
-package com.example.storecomponents.view
+package com.example.storecomponents.data.model
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,9 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.storecomponents.data.model.Userole
-import com.example.storecomponents.data.model.Usuarios
-import com.example.storecomponents.viewmodel.UsuarioEstado
 import com.example.storecomponents.viewmodel.UsuariosViewModel
 
 @Composable

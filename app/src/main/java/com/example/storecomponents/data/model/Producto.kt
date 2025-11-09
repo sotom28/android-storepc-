@@ -1,12 +1,14 @@
 package com.example.storecomponents.data.model
 
-data class Producto(
-    val id: String = "",
-    val nombre: String = "",
-    val descripcion: String = "",
-    val precio: Double = 0.0,
-    val stock: Int = 0,
-    val categoria: String = "",
-    val imagenUrl: String = ""
-)
+import java.util.UUID
 
+data class Producto(
+    val id: String = UUID.randomUUID().toString(),
+    val nombre: String,
+    val descripcion: String,
+    val precio: Double,
+    val stock: Int,
+    val categoria: String,
+    val imagenUrl: String,
+    val clienteId: String? = null
+)

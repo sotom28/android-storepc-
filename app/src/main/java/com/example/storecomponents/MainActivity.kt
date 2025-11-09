@@ -31,6 +31,7 @@ import com.example.storecomponents.view.LoginScreen
 import com.example.storecomponents.view.AppShell
 import com.example.storecomponents.navigation.Screen
 import androidx.fragment.app.FragmentActivity
+import com.example.storecomponents.view.GestionVentasScreen
 
 class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -38,6 +39,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Inicializar el store local de autenticación para persistencia
+        com.example.storecomponents.data.local.LocalAuthStore.init(applicationContext)
         setContent {
             StorecomponentsTheme {
                 val navController = rememberNavController()
@@ -79,13 +82,14 @@ class MainActivity : FragmentActivity() {
                         else -> { /* no-op */ }
                     }
                 }
-
+                /// 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     AppShell(currentRoute = currentRoute, onNavigate = { route -> navController.navigate(route) }) { padding ->
+                        // Usar innerPadding provisto por Scaffold para respetar inset/padding del sistema
                         NavHost(
                             navController = navController,
                             startDestination = Screen.login.route,
-                            modifier = Modifier.padding(padding)
+                            modifier = Modifier.padding(innerPadding)
                         ) {
                             composable(Screen.login.route) {
                                 LoginScreen(
