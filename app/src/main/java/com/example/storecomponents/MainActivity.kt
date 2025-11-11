@@ -21,6 +21,7 @@ import com.example.storecomponents.viewmodel.AuthViewModel
 import com.example.storecomponents.ui.theme.StorecomponentsTheme
 import com.example.storecomponents.view.AdminMenuScreen
 import com.example.storecomponents.view.cliente.ClienteMenuScreen
+import com.example.storecomponents.view.cliente.ProductoScreen // Importa la pantalla de productos
 import com.example.storecomponents.view.ProductListScreen
 import com.example.storecomponents.view.GestionVentasScreen
 import com.example.storecomponents.view.cliente.ClienteOrdersScreen
@@ -93,7 +94,8 @@ class MainActivity : FragmentActivity() {
                                         // intentar login por username o email (método flexible)
                                         authViewModel.loginByUsername(emailOrUser, password)
                                     },
-                                    onRegister = { navController.navigate(Screen.register.route) }
+                                    onRegister = { navController.navigate(Screen.register.route) },
+                                    onNavigateToProducts = { navController.navigate("productos") } // Navega a la pantalla de productos
                                 )
                             }
                             composable(Screen.register.route) {
@@ -124,9 +126,8 @@ class MainActivity : FragmentActivity() {
                                     }
                                 )
                             }
-                            composable(Screen.productos.route) {
-                                // Mostrar la lista de productos
-                                ProductListScreen(onOpenProduct = { _ -> /* navegar a detalle si está implementado */ })
+                            composable("productos") { // Añade esta ruta
+                                ProductoScreen()
                             }
                             composable(Screen.usuarios.route) {
                                 GestionUsuarioScreen(onNavigate = { route -> navController.navigate(route) })
