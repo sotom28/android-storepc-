@@ -11,19 +11,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.viewmodel.OrdersViewModel
-import com.example.storecomponents.viewmodel.UsersViewModel
+import com.example.storecomponents.viewmodel.StoreViewModel
 
 @Composable
 fun ClienteOrdersScreen(
     onNavigate: (String) -> Unit = {},
     ordersViewModel: OrdersViewModel = viewModel(),
-    usersViewModel: UsersViewModel = viewModel()
+    storeViewModel: StoreViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
     // Simulamos que el primer usuario con role 'cliente' es el actual en este ejemplo.
-    // En una app real, deberías obtener el userId del AuthViewModel o similar.
-    val currentBuyer = usersViewModel.users.firstOrNull { it.role == "cliente" }
+    val currentBuyer = storeViewModel.users.firstOrNull { it.role == "cliente" }
     val buyerId = currentBuyer?.id
 
     var productName by remember { mutableStateOf("") }
@@ -100,4 +99,3 @@ fun ClienteOrdersScreen(
         }
     }
 }
-
