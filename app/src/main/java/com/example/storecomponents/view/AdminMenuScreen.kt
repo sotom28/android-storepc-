@@ -21,9 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.navigation.Screen
-import com.example.storecomponents.viewmodel.UsersViewModel
 
 // Item de menú reutilizable
 data class AdminMenuItem(val title: String, val route: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -45,8 +43,7 @@ fun AdminMenuScreen(
     initialSelectedRoute: String? = null,
     showLogout: Boolean = true,
     onNavigate: (String) -> Unit = {},
-    onLogout: () -> Unit = {},
-    usersViewModel: UsersViewModel = viewModel()
+    onLogout: () -> Unit = {}
 ) {
     val items = menuItems
 
