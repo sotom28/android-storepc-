@@ -11,11 +11,44 @@ class ProductoRepository {
     val productos: StateFlow<List<Producto>> = _productos.asStateFlow()
 
     init {
-        // Datos de productos de ejemplo (ASCII sencillo)
+        // Productos de muestra con imágenes y descripciones completas
         val productosIniciales = listOf(
-            Producto("1", "Producto 1", "Descripcion 1", 10.0, 5, "Categoria1", ""),
-            Producto("2", "Producto 2", "Descripcion 2", 20.0, 10, "Categoria2", ""),
-            Producto("3", "Producto 3", "Descripcion 3", 30.0, 3, "Categoria3", "")
+            Producto(
+                id = "1",
+                nombre = "Laptop HP Pavilion",
+                descripcion = "Laptop HP Pavilion 15.6\" con procesador Intel Core i5, 8GB RAM, 256GB SSD. Ideal para trabajo y estudio.",
+                precio = 699.99,
+                stock = 15,
+                categoria = "Electrónicos",
+                imagenUrl = "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400"
+            ),
+            Producto(
+                id = "2",
+                nombre = "Mouse Logitech MX Master 3",
+                descripcion = "Mouse inalámbrico ergonómico con sensor de alta precisión y batería de larga duración. Perfecto para productividad.",
+                precio = 99.99,
+                stock = 50,
+                categoria = "Accesorios",
+                imagenUrl = "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400"
+            ),
+            Producto(
+                id = "3",
+                nombre = "Teclado Mecánico Keychron K2",
+                descripcion = "Teclado mecánico inalámbrico compacto 75% con switches Gateron. RGB, conexión Bluetooth y cable USB-C.",
+                precio = 89.99,
+                stock = 30,
+                categoria = "Accesorios",
+                imagenUrl = "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400"
+            ),
+            Producto(
+                id = "4",
+                nombre = "Monitor LG UltraWide 29\"",
+                descripcion = "Monitor IPS UltraWide 29\" 2560x1080, ideal para multitarea y edición. HDR10, 75Hz, FreeSync.",
+                precio = 299.99,
+                stock = 20,
+                categoria = "Monitores",
+                imagenUrl = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400"
+            )
         )
         _productos.value = productosIniciales
     }
