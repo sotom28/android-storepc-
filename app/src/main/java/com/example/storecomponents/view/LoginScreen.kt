@@ -113,10 +113,10 @@ fun LoginScreen(
         // Botones de prueba para debugging: entradas rápidas
         Button(
             onClick = {
-                //Toast.makeText(context, "Intentando login como cliente...", Toast.LENGTH_SHORT).show()
-                //onLogin("cliente@store.com", "cliente123")
-                Toast.makeText(context, "Navegando a la pantalla de productos...", Toast.LENGTH_SHORT).show()
-                onNavigateToProducts()
+                Toast.makeText(context, "Intentando login como cliente...", Toast.LENGTH_SHORT).show()
+                onLogin("cliente@store.com", "cliente123")
+                //Toast.makeText(context, "Navegando a la pantalla de productos...", Toast.LENGTH_SHORT).show()
+                //onNavigateToProducts()
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -214,11 +214,6 @@ fun LoginScreen(
     }
 }
 
-// Aquí puedes agregar más features (ejemplo: NFC, QR, etc.)
-// Ejemplo:
-// Button(onClick = { /* lógica de login con QR */ }, modifier = Modifier.fillMaxWidth()) {
-//     Text(text = "Iniciar sesión con QR")
-// }
 
 @Preview(showBackground = true)
 @Composable

@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.storecomponents.navigation.Screen
 
@@ -22,8 +23,8 @@ data class MenuItem(val title: String, val route: String)
 @Composable
 fun ClienteMenuScreen(onNavigate: (String) -> Unit = {}, onLogout: () -> Unit = {}) {
     val items = listOf(
-        MenuItem("Productos", Screen.ProductoList.route),
-        MenuItem("Mi Carrito", Screen.carrito.route),
+        MenuItem("Productos", "productos"), // Cambiado a "productos"
+        MenuItem("Mi Carrito", "carrito"), // Cambiado a "carrito"
         MenuItem("Mis Pedidos", Screen.Pedidos.route),
         MenuItem("Mi Perfil", Screen.Datos.route),
         MenuItem("Gestión de Productos", "gestion_productos")
@@ -56,4 +57,10 @@ fun ClienteMenuScreen(onNavigate: (String) -> Unit = {}, onLogout: () -> Unit = 
             Text(text = "Cerrar sesión")
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ClienteMenuScreenPreview() {
+    ClienteMenuScreen()
 }
