@@ -42,7 +42,8 @@ fun LoginScreen(
     onLogin: (usernameOrEmail: String, password: String) -> Unit = { _, _ -> },
     onRegister: () -> Unit = {},
     onCameraLogin: (() -> Unit)? = null,
-    capturedPhoto: ImageBitmap? = null
+    capturedPhoto: ImageBitmap? = null,
+    onNavigateToProducts: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -115,6 +116,8 @@ fun LoginScreen(
             onClick = {
                 Toast.makeText(context, "Intentando login como cliente...", Toast.LENGTH_SHORT).show()
                 onLogin("cliente@store.com", "cliente123")
+                //Toast.makeText(context, "Navegando a la pantalla de productos...", Toast.LENGTH_SHORT).show()
+                //onNavigateToProducts()
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -206,11 +209,6 @@ fun LoginScreen(
     }
 }
 
-// Aquí puedes agregar más features (ejemplo: NFC, QR, etc.)
-// Ejemplo:
-// Button(onClick = { /* lógica de login con QR */ }, modifier = Modifier.fillMaxWidth()) {
-//     Text(text = "Iniciar sesión con QR")
-// }
 
 @Preview(showBackground = true)
 @Composable

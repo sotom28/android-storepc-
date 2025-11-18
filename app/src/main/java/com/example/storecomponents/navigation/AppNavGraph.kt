@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.storecomponents.view.* // Importa todas las vistas
 import com.example.storecomponents.viewmodel.AuthViewModel
-import com.example.storecomponents.viewmodel.CartViewModel
+
 
 object Routes {
     const val PRODUCTO = "product/{id}"
@@ -19,7 +19,6 @@ object Routes {
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
-    val cartViewModel: CartViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
 
     val startDestination = Screen.login.route
