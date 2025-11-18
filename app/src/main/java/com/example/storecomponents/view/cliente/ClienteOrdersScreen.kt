@@ -26,17 +26,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.viewmodel.OrdersViewModel
-import com.example.storecomponents.viewmodel.UsersViewModel
+import com.example.storecomponents.viewmodel.StoreViewModel
 
 @Composable
 fun ClienteOrdersScreen(
     onNavigate: (String) -> Unit = {},
     ordersViewModel: OrdersViewModel = viewModel(),
-    usersViewModel: UsersViewModel = viewModel()
+    storeViewModel: StoreViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
+
+    // Simulamos que el primer usuario con role 'cliente' es el actual en este ejemplo.
+  
+
     val currentBuyer = usersViewModel.users.firstOrNull { it.role == "cliente" }
+
     val buyerId = currentBuyer?.id
 
     var productName by remember { mutableStateOf("") }
@@ -52,7 +57,7 @@ fun ClienteOrdersScreen(
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text = "Crear Compra", style = MaterialTheme.typography.titleSmall)
 
-                OutlinedTextField(
+                OutlinedTextField( //
                     value = productName,
                     onValueChange = { productName = it },
                     label = { Text("Nombre del Producto") },
@@ -119,3 +124,4 @@ fun ClienteOrdersScreen(
 fun ClienteOrdersScreenPreview() {
     ClienteOrdersScreen()
 }
+

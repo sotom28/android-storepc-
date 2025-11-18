@@ -1,4 +1,9 @@
 package com.example.storecomponents.navigation
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 sealed class Screen(val route: String){
     object clienteMenu : Screen(route = "clienteMenu")
@@ -19,6 +24,8 @@ sealed class Screen(val route: String){
     // Agregadas rutas para menú de cliente
     object Pedidos : Screen(route = "pedidos")
     object Datos : Screen(route = "datos")
+
+
 
 
 }

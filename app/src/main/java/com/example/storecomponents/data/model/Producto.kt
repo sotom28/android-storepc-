@@ -11,7 +11,4 @@ data class Producto(
     val categoria: String,
     val imagenUrl: String,
     val clienteId: String? = null
-) {
-    fun estaDisponible(): Boolean = stock > 0
-}
-
+)

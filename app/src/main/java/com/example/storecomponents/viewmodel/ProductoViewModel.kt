@@ -1,6 +1,9 @@
 package com.example.storecomponents.viewmodel
 
+
+
 import androidx.lifecycle.ViewModel
+
 import androidx.lifecycle.viewModelScope
 import com.example.storecomponents.data.model.Producto
 import com.example.storecomponents.data.repository.ProductoRepository
@@ -10,10 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+
+
 // ViewModel para gestionar productos
 class ProductoViewModel(
     private val productoRepository: ProductoRepository = ProductoRepository()
 ) : ViewModel() {
+
 
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
     val productos: StateFlow<List<Producto>> = _productos.asStateFlow()
@@ -43,6 +49,19 @@ class ProductoViewModel(
 
     private fun cargarProductos() {
         viewModelScope.launch {
+            _productos.value = productoRepository.getALL()
+        }
+    }
+
+    fun agregarProducto(producto: Producto) {
+        viewModelScope.launch {
+            _estadoProducto.value = EstadoProducto.Cargando
+            try {
+                productoRepository.add(producto)
+                cargarProductos()
+                _estadoProducto.value = EstadoProducto.Exito("Producto agregado")
+            } catch (e: Exception) {
+                _estadoProducto.value = EstadoProducto.Error(e.message ?: "Error desconocido")
             _productos.value = productoRepository.obtenerTodosLosProductos()
             actualizarCategorias()
         }
@@ -103,30 +122,28 @@ class ProductoViewModel(
         }
     }
 
-    // Función para actualizar un producto existente
     fun actualizarProducto(producto: Producto) {
         viewModelScope.launch {
             _estadoProducto.value = EstadoProducto.Cargando
-            val resultado = productoRepository.actualizarProducto(producto)
-            _estadoProducto.value = if (resultado.isSuccess) {
+            try {
+                productoRepository.update(producto)
                 cargarProductos()
-                EstadoProducto.Exito("Producto actualizado")
-            } else {
-                EstadoProducto.Error(resultado.exceptionOrNull()?.message ?: "Error desconocido")
+                _estadoProducto.value = EstadoProducto.Exito("Producto actualizado")
+            } catch (e: Exception) {
+                _estadoProducto.value = EstadoProducto.Error(e.message ?: "Error desconocido")
             }
         }
     }
 
-    // Función para eliminar un producto por su ID
     fun eliminarProducto(productoId: String) {
         viewModelScope.launch {
             _estadoProducto.value = EstadoProducto.Cargando
-            val resultado = productoRepository.eliminarProducto(productoId)
-            _estadoProducto.value = if (resultado.isSuccess) {
+            try {
+                productoRepository.delete(productoId)
                 cargarProductos()
-                EstadoProducto.Exito("Producto eliminado")
-            } else {
-                EstadoProducto.Error(resultado.exceptionOrNull()?.message ?: "Error")
+                _estadoProducto.value = EstadoProducto.Exito("Producto eliminado")
+            } catch (e: Exception) {
+                _estadoProducto.value = EstadoProducto.Error(e.message ?: "Error")
             }
         }
     }

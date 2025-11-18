@@ -59,6 +59,14 @@ fun RegisterScreen(
             label = { Text("Nombre") },
             modifier = Modifier.fillMaxWidth()
         )
+        OutlinedTextField(
+            value= username,
+            onValueChange = { username = it },
+            label = { Text("Nombre de usuario") },
+            modifier = Modifier.fillMaxWidth()
+
+
+        )
 
         OutlinedTextField(
             value = role,
@@ -122,12 +130,23 @@ fun RegisterScreen(
             }
 
             // Usar AuthViewModel para registrar y auto-logear
-            authViewModel.register(name.trim(), email.trim(), role.trim(), password.trim())
+            // CORRECCIÓN: pasar los parámetros en el orden correcto: name, email, role, password, confirmPassword, direccion
+            // Si se proporcionó "username" lo usamos como nombre real (para login por username)
+            val nombreParaRegistro = if (username.isNotBlank()) username.trim() else name.trim()
+            authViewModel.register(
+                nombreParaRegistro,
+                email.trim(),
+                role.trim(),
+                password.trim(),
+                confirmPassword.trim(),
+                direccion.trim()
+            )
 
             Toast.makeText(context, "Usuario registrado", Toast.LENGTH_SHORT).show()
             // limpiar formulario opcional
             name = ""
             role = "cliente"
+            username = ""
             email = ""
             password = ""
             confirmPassword = ""

@@ -2,6 +2,7 @@ package com.example.storecomponents.data.repository
 
 import com.example.storecomponents.data.model.Usuarios
 import com.example.storecomponents.data.model.Userole
+import com.example.storecomponents.data.local.LocalAuthStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,21 +13,38 @@ class AuthRepository {
     val usuarioActual: StateFlow<Usuarios?> = _usuarioActual
 
     // usuarios de ejemplo para autenticación
-    private val usuariosList = mutableListOf(
+    private var usuariosList = mutableListOf(
         Usuarios(id = 1, nombre = "admin", correo = "admin@store.com", role = Userole.ADMIN, password = "admin123", confirmarPassword = "admin123", direccion = ""),
         Usuarios(id = 2, nombre = "cliente", correo = "cliente@store.com", role = Userole.CLIENT, password = "cliente123", confirmarPassword = "cliente123", direccion = "")
     )
+
+    init {
+        // Si existe LocalAuthStore inicializado, cargar desde ahí
+        if (LocalAuthStore.isInitialized()) {
+            val loaded = LocalAuthStore.loadUsers()
+            if (loaded.isNotEmpty()) {
+                usuariosList = loaded.toMutableList()
+                // cargar sesión si existe
+                val currentId = LocalAuthStore.loadCurrentUserId()
+                if (currentId != null) {
+                    _usuarioActual.value = usuariosList.firstOrNull { it.id == currentId }
+                }
+            }
+        }
+    }
 
     // Exponer la lista de usuarios como StateFlow para UI de gestión
     private val _usuariosFlow = MutableStateFlow<List<Usuarios>>(usuariosList.toList())
     val usuariosFlow: StateFlow<List<Usuarios>> = _usuariosFlow.asStateFlow()
 
     // Función de login
-    fun login(email: String, password: String): Result<Usuarios> {
+    fun login(emailOrName: String, password: String): Result<Usuarios> {
         return try {
-            val user = usuariosList.find { it.correo == email && it.password == password }
+            // Permitir iniciar sesión usando correo o nombre de usuario
+            val user = usuariosList.find { (it.correo == emailOrName || it.nombre == emailOrName) && it.password == password }
             if (user != null) {
                 _usuarioActual.value = user
+                if (LocalAuthStore.isInitialized()) LocalAuthStore.saveCurrentUserId(user.id)
                 Result.success(user)
             } else {
                 Result.failure(Exception("Credenciales inválidas"))
@@ -40,6 +58,7 @@ class AuthRepository {
         return try {
             usuariosList.add(nuevo)
             _usuariosFlow.value = usuariosList.toList()
+            if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
             Result.success(nuevo)
         } catch (e: Exception) {
             Result.failure(e)
@@ -48,6 +67,7 @@ class AuthRepository {
 
     fun cerrarSesion() {
         _usuarioActual.value = null
+        if (LocalAuthStore.isInitialized()) LocalAuthStore.saveCurrentUserId(null)
     }
 
     fun isLoggedIn(): Boolean = _usuarioActual.value != null
@@ -60,6 +80,7 @@ class AuthRepository {
         return try {
             usuariosList.add(usuario)
             _usuariosFlow.value = usuariosList.toList()
+            if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -73,6 +94,7 @@ class AuthRepository {
             if (idx >= 0) {
                 usuariosList[idx] = usuario
                 _usuariosFlow.value = usuariosList.toList()
+                if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))
@@ -88,6 +110,7 @@ class AuthRepository {
             val removed = usuariosList.removeAll { it.id == id }
             if (removed) {
                 _usuariosFlow.value = usuariosList.toList()
+                if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))
