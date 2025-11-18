@@ -118,6 +118,18 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getSalesManager(): StoreUser? = _users.firstOrNull { it.isSalesManager }
 
+    // --- Authentication helper ---
+    /**
+     * Devuelve el usuario si las credenciales coinciden, o null si no.
+     * Comparación de email no sensible a mayúsculas; password exacta.
+     */
+    fun login(email: String, password: String): StoreUser? {
+        return _users.firstOrNull { u ->
+            val ue = u.email
+            ue != null && ue.equals(email, ignoreCase = true) && u.password == password
+        }
+    }
+
     // --- Productos CRUD ---
     fun addProduct(name: String, description: String? = null, price: Double = 0.0, imageUrl: String? = null) {
         val newId = if (_products.isEmpty()) 1L else (_products.maxOf { it.id } + 1)
