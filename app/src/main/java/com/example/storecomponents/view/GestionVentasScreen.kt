@@ -12,19 +12,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.viewmodel.OrdersViewModel
-import com.example.storecomponents.viewmodel.UsersViewModel
+import com.example.storecomponents.viewmodel.StoreViewModel
 
 @Composable
 fun GestionVentasScreen(
     onNavigate: (String) -> Unit = {},
     ordersViewModel: OrdersViewModel = viewModel(),
-    usersViewModel: UsersViewModel = viewModel()
+    storeViewModel: StoreViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
     // Datos
     val orders = ordersViewModel.orders
-    val manager = usersViewModel.getSalesManager()
+    val manager = storeViewModel.getSalesManager()
 
     // Form state
     var productName by remember { mutableStateOf("") }
@@ -39,7 +39,7 @@ fun GestionVentasScreen(
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Cambiado: título de la pantalla a gestión de ventas
+        // Título de la pantalla
         Text(text = "Gestión de Ventas", style = MaterialTheme.typography.titleLarge)
 
         if (manager == null) {
@@ -48,7 +48,7 @@ fun GestionVentasScreen(
             Text(text = "Gestor activo: ${manager.name}", style = MaterialTheme.typography.bodyMedium)
         }
 
-        // Form para crear venta (antes pedido)
+        // Form para crear venta
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text = "Crear Nueva Venta", style = MaterialTheme.typography.titleSmall)
@@ -80,7 +80,6 @@ fun GestionVentasScreen(
                         }
                         val assignedId = manager?.id
                         ordersViewModel.addOrder(productName.trim(), qty, assignedId)
-                        // Toast actualizado
                         Toast.makeText(context, "Venta creada exitosamente", Toast.LENGTH_SHORT).show()
                         productName = ""
                         quantityText = "1"
@@ -95,7 +94,7 @@ fun GestionVentasScreen(
             }
         }
 
-        // Usar HorizontalDivider en lugar de Divider (deprecated -> HorizontalDivider)
+        // Separador
         HorizontalDivider()
 
         // Lista de ventas
@@ -108,7 +107,7 @@ fun GestionVentasScreen(
                 items(orders, key = { it.id }) { o ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Información de la venta (antes pedido)
+                            // Información de la venta
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -135,7 +134,7 @@ fun GestionVentasScreen(
                             }
 
                             Text(text = "Cantidad: ${o.quantity}")
-                            val assignedName = o.assignedToId?.let { usersViewModel.users.firstOrNull { u -> u.id == it }?.name } ?: "Sin asignar"
+                            val assignedName = o.assignedToId?.let { storeViewModel.users.firstOrNull { u -> u.id == it }?.name } ?: "Sin asignar"
                             Text(text = "Asignado a: $assignedName")
 
                             // Selector de estado
@@ -188,7 +187,6 @@ fun GestionVentasScreen(
                                 Button(
                                     onClick = {
                                         ordersViewModel.removeOrder(o.id)
-                                        // Toast actualizado
                                         Toast.makeText(context, "Venta eliminada", Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier
@@ -208,7 +206,7 @@ fun GestionVentasScreen(
         }
     }
 
-    // Diálogo para editar venta (antes pedido)
+    // Diálogo para editar venta
     if (editingOrderId != null) {
         AlertDialog(
             onDismissRequest = { editingOrderId = null },
@@ -234,7 +232,6 @@ fun GestionVentasScreen(
                     val newQty = editingQuantity.toIntOrNull()
                     if (editingProductName.isNotBlank() && newQty != null && newQty > 0) {
                         ordersViewModel.updateOrder(editingOrderId!!, editingProductName, newQty)
-                        // Toast actualizado
                         Toast.makeText(context, "Venta actualizada", Toast.LENGTH_SHORT).show()
                         editingOrderId = null
                     } else {
