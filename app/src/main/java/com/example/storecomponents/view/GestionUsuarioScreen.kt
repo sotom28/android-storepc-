@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.viewmodel.StoreViewModel
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.example.storecomponents.navigation.Screen
 
 @Composable
 fun GestionUsuarioScreen(
@@ -191,7 +192,7 @@ fun GestionUsuarioScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Acción rápida: volver al menú admin
-        OutlinedButton(onClick = { onNavigate("admin") }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { onNavigate(Screen.adminmenu.route) }, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Volver al Menú Admin")
         }
     }

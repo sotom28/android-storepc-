@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.data.model.Producto
 import com.example.storecomponents.viewmodel.ProductoViewModel
+import java.util.UUID
 
 // 1. Clase de datos para gestionar el estado del formulario
 private data class FormState(
@@ -192,11 +193,12 @@ fun GestionProductoScreen(
             item {
                 Button(
                     onClick = {
-                        val productoParaGuardar = formState.toProducto(id = productoId ?: "")
+                        // Generar id al crear; si estamos editando usamos el id existente
+                        val idToUse = if (isEditing) (productoId ?: UUID.randomUUID().toString()) else UUID.randomUUID().toString()
+                        val productoParaGuardar = formState.toProducto(id = idToUse)
                         if (isEditing) {
                             productoViewModel.actualizarProducto(productoParaGuardar)
                         } else {
-                            // En modo creación, el ID debería ser generado por el ViewModel o Backend
                             productoViewModel.agregarProducto(productoParaGuardar)
                         }
                         onNavigateBack() // Volvemos a la pantalla anterior tras guardar
@@ -214,4 +216,3 @@ fun GestionProductoScreen(
         }
     }
 }
-

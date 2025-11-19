@@ -30,8 +30,8 @@ fun AppNavGraph() {
         // Admin: listado de productos (usar la pantalla existente ProductListScreen)
         composable(Screen.productos.route) {
             ProductListScreen(onOpenProduct = { product ->
-                // navegar al detalle usando la ruta definida (product/{id})
-                navController.navigate("product/${product.id}")
+                // navegar a la pantalla de edición para el producto seleccionado
+                navController.navigate("editarProducto/${product.id}")
             })
         }
 

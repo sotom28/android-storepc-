@@ -32,6 +32,9 @@ import com.example.storecomponents.view.AppShell
 import com.example.storecomponents.navigation.Screen
 import androidx.fragment.app.FragmentActivity
 import com.example.storecomponents.view.GestionVentasScreen
+import com.example.storecomponents.view.GestionProductoScreen
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 
 class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -130,7 +133,20 @@ class MainActivity : FragmentActivity() {
                             }
                             composable(Screen.productos.route) {
                                 // Mostrar la lista de productos
-                                ProductListScreen(onOpenProduct = { _ -> /* navegar a detalle si está implementado */ })
+                                ProductListScreen(onOpenProduct = { product ->
+                                    navController.navigate("editarProducto/${product.id}")
+                                })
+                            }
+                            // Rutas para crear/editar producto desde este NavHost
+                            composable(Screen.agregarProducto.route) {
+                                GestionProductoScreen(productoId = null, onNavigateBack = { navController.popBackStack() })
+                            }
+                            composable(
+                                Screen.editarProducto.route,
+                                arguments = listOf(navArgument("productoId") { type = NavType.StringType })
+                            ) { backStackEntry ->
+                                val productoId = backStackEntry.arguments?.getString("productoId")
+                                GestionProductoScreen(productoId = productoId, onNavigateBack = { navController.popBackStack() })
                             }
                             composable(Screen.usuarios.route) {
                                 GestionUsuarioScreen(onNavigate = { route -> navController.navigate(route) })

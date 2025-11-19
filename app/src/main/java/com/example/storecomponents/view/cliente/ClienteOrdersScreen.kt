@@ -63,7 +63,8 @@ fun ClienteOrdersScreen(
                             Toast.makeText(context, "La cantidad debe ser mayor a 0", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        ordersViewModel.addOrder(productName.trim(), qty, null, buyerId)
+                        // Cambiado: pasar buyerId como argumento nombrado para evitar conflicto con el parámetro 'price' (Double)
+                        ordersViewModel.addOrder(productName.trim(), qty, assignedToId = null, buyerId = buyerId)
                         Toast.makeText(context, "Compra registrada", Toast.LENGTH_SHORT).show()
                         productName = ""
                         quantityText = "1"
