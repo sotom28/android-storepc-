@@ -35,6 +35,10 @@ import com.example.storecomponents.view.GestionVentasScreen
 import com.example.storecomponents.view.GestionProductoScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.example.storecomponents.view.cliente.PerfilScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.storecomponents.data.repository.PerfilRepository
+import com.example.storecomponents.viewmodel.PerfilviewModel
 
 class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -51,6 +55,10 @@ class MainActivity : FragmentActivity() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 val context = LocalContext.current
+
+                // Crear repo + viewmodel para perfil y compartirlo con la pantalla de perfil
+                val perfilRepo = PerfilRepository(context)
+                val perfilViewModel: PerfilviewModel = viewModel(factory = PerfilviewModel.Factory(perfilRepo))
 
                 // Observar rol para navegar automáticamente cuando cambie (login/registro)
                 val role by authViewModel.role.collectAsState()
@@ -85,7 +93,7 @@ class MainActivity : FragmentActivity() {
                         else -> { /* no-op */ }
                     }
                 }
-                /// 
+                ///
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     AppShell(currentRoute = currentRoute, onNavigate = { route -> navController.navigate(route) }) { padding ->
                         // Usar innerPadding provisto por Scaffold para respetar inset/padding del sistema
@@ -160,10 +168,14 @@ class MainActivity : FragmentActivity() {
                                     GestionVentasScreen(onNavigate = { route -> navController.navigate(route) })
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+                            composable(Screen.perfil.route) {
+                                PerfilScreen(viewModel = perfilViewModel)
+                            }
+
+                        } // fin NavHost
+                    } // fin AppShell
+                } // fin Scaffold
+            } // fin StorecomponentsTheme
+        } // fin setContent
+    } // fin onCreate
+} // fin MainActivity

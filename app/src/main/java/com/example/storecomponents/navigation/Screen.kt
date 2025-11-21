@@ -24,6 +24,8 @@ sealed class Screen(val route: String){
     // Agregadas rutas para menú de cliente
     object Pedidos : Screen(route = "pedidos")
     object Datos : Screen(route = "datos")
+    // Perfil del cliente
+    object perfil : Screen(route = "perfil")
 
 
 

@@ -33,8 +33,8 @@ import androidx.compose.runtime.snapshotFlow
 @Composable
 fun GestionVentasScreen(
     onNavigate: (String) -> Unit = {},
-    ordersViewModel: OrdersViewModel = viewModel(),
-    storeViewModel: StoreViewModel = viewModel()
+    ordersViewModel: OrdersViewModel = viewModel<OrdersViewModel>(),
+    storeViewModel: StoreViewModel = viewModel<StoreViewModel>()
 ) {
     val context = LocalContext.current
 
@@ -305,7 +305,7 @@ fun GestionVentasScreen(
                     .onGloballyPositioned { overlayHeightPx = it.size.height }
                     // Drag para desplazar arrastrando el pulgar
                     .pointerInput(Unit) {
-                        detectVerticalDragGestures { change, dragAmount ->
+                        detectVerticalDragGestures { _, dragAmount ->
                             // No consumimos explícitamente el cambio aquí (evita APIs no resueltas); dejamos que el sistema maneje el consumo.
                             // change.consumePositionChange()
                             val layoutInfo = listState.layoutInfo

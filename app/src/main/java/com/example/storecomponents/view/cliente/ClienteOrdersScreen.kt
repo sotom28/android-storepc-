@@ -16,8 +16,8 @@ import com.example.storecomponents.viewmodel.StoreViewModel
 @Composable
 fun ClienteOrdersScreen(
     onNavigate: (String) -> Unit = {},
-    ordersViewModel: OrdersViewModel = viewModel(),
-    storeViewModel: StoreViewModel = viewModel()
+    ordersViewModel: OrdersViewModel = viewModel<OrdersViewModel>(),
+    storeViewModel: StoreViewModel = viewModel<StoreViewModel>()
 ) {
     val context = LocalContext.current
 

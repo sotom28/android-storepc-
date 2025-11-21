@@ -25,7 +25,7 @@ fun ClienteMenuScreen(onNavigate: (String) -> Unit = {}, onLogout: () -> Unit = 
         MenuItem("Productos", Screen.ProductoList.route),
         MenuItem("Mi Carrito", Screen.carrito.route),
         MenuItem("Mis Pedidos", Screen.Pedidos.route),
-        MenuItem("Mi Perfil", Screen.Datos.route),
+        MenuItem("Mi Perfil", "perfil"),
         MenuItem("Gestión de Productos", "gestion_productos")
     )
 
