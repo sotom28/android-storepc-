@@ -17,7 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.example.storecomponents.viewmodel.PerfilviewModel
-import com.example.storecomponents.viewmodel.User
+
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -26,6 +26,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.example.storecomponents.data.model.User
+
 
 @Composable
 fun PerfilScreen(viewModel: PerfilviewModel? = null, onBack: () -> Unit = {}) {

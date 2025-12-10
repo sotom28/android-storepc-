@@ -3,6 +3,7 @@ package com.example.storecomponents.data.repository
 import com.example.storecomponents.data.model.Usuarios
 import com.example.storecomponents.data.model.Userole
 import com.example.storecomponents.data.local.LocalAuthStore
+import com.example.storecomponents.data.remote.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,10 +13,10 @@ class AuthRepository {
     private val _usuarioActual = MutableStateFlow<Usuarios?>(null)
     val usuarioActual: StateFlow<Usuarios?> = _usuarioActual
 
-    // usuarios de ejemplo para autenticación
+    // usuarios de ejemplo para autenticación (usando Usuarios)
     private var usuariosList = mutableListOf(
-        Usuarios(id = 1, nombre = "admin", correo = "admin@store.com", role = Userole.ADMIN, password = "admin123", confirmarPassword = "admin123", direccion = ""),
-        Usuarios(id = 2, nombre = "cliente", correo = "cliente@store.com", role = Userole.CLIENT, password = "cliente123", confirmarPassword = "cliente123", direccion = "")
+        Usuarios(id = 1, nombre = "admin", correo = "admin@store.com", role = Userole.ADMIN, password = "admin123", confirmarPassword = ""),
+        Usuarios(id = 2, nombre = "cliente", correo = "cliente@store.com", role = Userole.CLIENT, password = "cliente123", confirmarPassword = "")
     )
 
     init {
@@ -23,7 +24,9 @@ class AuthRepository {
         if (LocalAuthStore.isInitialized()) {
             val loaded = LocalAuthStore.loadUsers()
             if (loaded.isNotEmpty()) {
+                // usar directamente la lista cargada (ya son Usuarios)
                 usuariosList = loaded.toMutableList()
+
                 // cargar sesión si existe
                 val currentId = LocalAuthStore.loadCurrentUserId()
                 if (currentId != null) {
@@ -54,12 +57,29 @@ class AuthRepository {
         }
     }
 
-    fun registro(nuevo: Usuarios): Result<Usuarios> {
+    // Ahora: registro intenta primero al backend; si falla guarda localmente
+    suspend fun registro(nuevo: Usuarios): Result<Usuarios> {
         return try {
-            usuariosList.add(nuevo)
-            _usuariosFlow.value = usuariosList.toList()
-            if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
-            Result.success(nuevo)
+            val api = ApiClient.retrofit
+            try {
+                val response = api.registerUser(nuevo)
+                if (response.isSuccessful) {
+                    val creado = response.body() ?: nuevo
+                    usuariosList.add(creado)
+                    _usuariosFlow.value = usuariosList.toList()
+                    Result.success(creado)
+                } else {
+                    // backend respondió con error; guardado local como fallback
+                    usuariosList.add(nuevo)
+                    _usuariosFlow.value = usuariosList.toList()
+                    Result.success(nuevo)
+                }
+            } catch (e: Exception) {
+                // comunicación fallida -> fallback local
+                usuariosList.add(nuevo)
+                _usuariosFlow.value = usuariosList.toList()
+                Result.success(nuevo)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -80,7 +100,6 @@ class AuthRepository {
         return try {
             usuariosList.add(usuario)
             _usuariosFlow.value = usuariosList.toList()
-            if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -94,7 +113,6 @@ class AuthRepository {
             if (idx >= 0) {
                 usuariosList[idx] = usuario
                 _usuariosFlow.value = usuariosList.toList()
-                if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))
@@ -110,7 +128,6 @@ class AuthRepository {
             val removed = usuariosList.removeAll { it.id == id }
             if (removed) {
                 _usuariosFlow.value = usuariosList.toList()
-                if (LocalAuthStore.isInitialized()) LocalAuthStore.saveUsers(usuariosList.toList())
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))

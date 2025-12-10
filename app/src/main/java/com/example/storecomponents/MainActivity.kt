@@ -1,13 +1,13 @@
 package com.example.storecomponents
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,7 +21,6 @@ import com.example.storecomponents.viewmodel.AuthViewModel
 import com.example.storecomponents.ui.theme.StorecomponentsTheme
 import com.example.storecomponents.view.AdminMenuScreen
 import com.example.storecomponents.view.cliente.ClienteMenuScreen
-import com.example.storecomponents.view.ProductListScreen
 import com.example.storecomponents.view.GestionVentasScreen
 import com.example.storecomponents.view.cliente.ClienteOrdersScreen
 import com.example.storecomponents.view.RegisterScreen
@@ -31,14 +30,16 @@ import com.example.storecomponents.view.LoginScreen
 import com.example.storecomponents.view.AppShell
 import com.example.storecomponents.navigation.Screen
 import androidx.fragment.app.FragmentActivity
-import com.example.storecomponents.view.GestionVentasScreen
 import com.example.storecomponents.view.GestionProductoScreen
+import com.example.storecomponents.view.cliente.ClienteProductosScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.example.storecomponents.view.cliente.ClienteProductoDetailScreen
 import com.example.storecomponents.view.cliente.PerfilScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.data.repository.PerfilRepository
 import com.example.storecomponents.viewmodel.PerfilviewModel
+import com.example.storecomponents.view.cliente.CartScreen
 
 class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -55,6 +56,22 @@ class MainActivity : FragmentActivity() {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 val context = LocalContext.current
+                // Crear repositorio y ViewModel de productos compartido para evitar crear ViewModel sin factory en pantallas hijas
+                val productoRepository = com.example.storecomponents.data.repository.ProductoRepository(context)
+                val productoViewModel: com.example.storecomponents.viewmodel.ProductoViewModel = viewModel(factory = com.example.storecomponents.viewmodel.ProductoViewModelFactory(productoRepository))
+
+                // Helper seguro para navegar desde callbacks externos (evita que la app se caiga si la ruta es inválida)
+                val safeNavigate: (String) -> Unit = { route ->
+                    try {
+                        Log.d("Nav", "intentando navegar a: $route")
+                        navController.navigate(route)
+                        Log.d("Nav", "navegación exitosa a: $route")
+                    } catch (e: Exception) {
+                        Log.e("Nav", "navegación fallida a: $route", e)
+                        // Mostrar feedback visible para facilitar depuración en dispositivo
+                        Toast.makeText(context, "Navegación fallida a: $route: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
 
                 // Crear repo + viewmodel para perfil y compartirlo con la pantalla de perfil
                 val perfilRepo = PerfilRepository(context)
@@ -93,89 +110,111 @@ class MainActivity : FragmentActivity() {
                         else -> { /* no-op */ }
                     }
                 }
-                ///
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppShell(currentRoute = currentRoute, onNavigate = { route -> navController.navigate(route) }) { padding ->
-                        // Usar innerPadding provisto por Scaffold para respetar inset/padding del sistema
-                        NavHost(
-                            navController = navController,
-                            startDestination = Screen.login.route,
-                            modifier = Modifier.padding(innerPadding)
-                        ) {
-                            composable(Screen.login.route) {
-                                LoginScreen(
-                                    onLogin = { emailOrUser, password ->
-                                        // intentar login por username o email (método flexible)
-                                        authViewModel.loginByUsername(emailOrUser, password)
-                                    },
-                                    onRegister = { navController.navigate(Screen.register.route) }
-                                )
-                            }
-                            composable(Screen.register.route) {
-                                RegisterScreen(onRegistered = {
-                                    // después de registrar volvemos al login (el registro puede auto-logear)
-                                    navController.popBackStack()
-                                }, authViewModel = authViewModel)
-                            }
-                            composable(Screen.clienteMenu.route) {
-                                ClienteMenuScreen(
-                                    onNavigate = { route -> navController.navigate(route) },
-                                    onLogout = {
-                                        authViewModel.cerrarSesion()
-                                        navController.navigate(Screen.login.route) {
-                                            popUpTo(Screen.login.route) { inclusive = true }
-                                        }
+                /// Usar AppShell como el Scaffold principal (evita doble topBar)
+                // Ocultar la topBar global en pantallas que ya insertan un header dentro del contenido
+                val showTopBar = when (currentRoute) {
+                    Screen.adminmenu.route, Screen.agregarProducto.route, Screen.editarProducto.route -> false
+                    else -> true
+                }
+                // Usar el helper seguro para navegación
+                AppShell(currentRoute = currentRoute, onNavigate = safeNavigate, showTopBar = showTopBar) { appPadding ->
+                     // Usar el padding que provee AppShell para el NavHost
+                     NavHost(
+                         navController = navController,
+                         startDestination = Screen.login.route,
+                         modifier = Modifier.fillMaxSize().padding(appPadding)
+                     ) {
+                        composable(Screen.login.route) {
+                            LoginScreen(
+                                onLogin = { emailOrUser, password ->
+                                    // intentar login por username o email (método flexible)
+                                    authViewModel.loginByUsername(emailOrUser, password)
+                                },
+                                onRegister = { navController.navigate(Screen.register.route) }
+                            )
+                        }
+                        composable(Screen.register.route) {
+                            RegisterScreen(onRegistered = {
+                                // después de registrar volvemos al login (el registro puede auto-logear)
+                                navController.popBackStack()
+                            }, authViewModel = authViewModel)
+                        }
+                        composable(Screen.clienteMenu.route) {
+                            ClienteMenuScreen(
+                                onNavigate = safeNavigate,
+                                onLogout = {
+                                    authViewModel.cerrarSesion()
+                                    // logout usa ruta estática, mantener comportamiento
+                                    navController.navigate(Screen.login.route) {
+                                        popUpTo(Screen.login.route) { inclusive = true }
                                     }
-                                )
-                            }
-                            composable(Screen.adminmenu.route) {
-                                AdminMenuScreen(
-                                    onNavigate = { route -> navController.navigate(route) },
-                                    onLogout = {
-                                        authViewModel.cerrarSesion()
-                                        navController.navigate(Screen.login.route) {
-                                            popUpTo(Screen.login.route) { inclusive = true }
-                                        }
-                                    }
-                                )
-                            }
-                            composable(Screen.productos.route) {
-                                // Mostrar la lista de productos
-                                ProductListScreen(onOpenProduct = { product ->
-                                    navController.navigate("editarProducto/${product.id}")
-                                })
-                            }
-                            // Rutas para crear/editar producto desde este NavHost
-                            composable(Screen.agregarProducto.route) {
-                                GestionProductoScreen(productoId = null, onNavigateBack = { navController.popBackStack() })
-                            }
-                            composable(
-                                Screen.editarProducto.route,
-                                arguments = listOf(navArgument("productoId") { type = NavType.StringType })
-                            ) { backStackEntry ->
-                                val productoId = backStackEntry.arguments?.getString("productoId")
-                                GestionProductoScreen(productoId = productoId, onNavigateBack = { navController.popBackStack() })
-                            }
-                            composable(Screen.usuarios.route) {
-                                GestionUsuarioScreen(onNavigate = { route -> navController.navigate(route) })
-                            }
-                            composable(Screen.Pedidos.route) {
-                                // Mostrar la pantalla adecuada según el role actual
-                                val roleInner by authViewModel.role.collectAsState()
-                                if (roleInner == com.example.storecomponents.viewmodel.UserRole.CLIENT) {
-                                    ClienteOrdersScreen(onNavigate = { route -> navController.navigate(route) })
-                                } else {
-                                    GestionVentasScreen(onNavigate = { route -> navController.navigate(route) })
                                 }
+                            )
+                        }
+                        composable(Screen.adminmenu.route) {
+                            AdminMenuScreen(
+                                onNavigate = safeNavigate,
+                                onLogout = {
+                                    authViewModel.cerrarSesion()
+                                    navController.navigate(Screen.login.route) {
+                                        popUpTo(Screen.login.route) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+                        composable(Screen.productos.route) {
+                            // Mostrar la lista de productos: cliente ve ClienteProductosScreen, admin ve GestionProductoScreen
+                            val roleInner by authViewModel.role.collectAsState()
+                            if (roleInner == com.example.storecomponents.viewmodel.UserRole.CLIENT) {
+                                ClienteProductosScreen(onNavigate = safeNavigate, productoViewModel = productoViewModel)
+                            } else {
+                                GestionProductoScreen(productoId = null, productoViewModel = productoViewModel, onNavigateBack = { navController.popBackStack() })
                             }
-                            composable(Screen.perfil.route) {
-                                PerfilScreen(viewModel = perfilViewModel)
+                        }
+                        // Rutas para crear/editar producto desde este NavHost
+                        composable(Screen.agregarProducto.route) {
+                            GestionProductoScreen(productoId = null, onNavigateBack = { navController.popBackStack() })
+                        }
+                        composable(
+                            Screen.editarProducto.route,
+                            arguments = listOf(navArgument("productoId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val productoId = backStackEntry.arguments?.getString("productoId")
+                            GestionProductoScreen(productoId = productoId, onNavigateBack = { navController.popBackStack() })
+                        }
+                        composable(Screen.usuarios.route) {
+                            GestionUsuarioScreen(onNavigate = safeNavigate)
+                        }
+                        composable(Screen.Pedidos.route) {
+                            // Mostrar la pantalla adecuada según el role actual
+                            val roleInner by authViewModel.role.collectAsState()
+                            if (roleInner == com.example.storecomponents.viewmodel.UserRole.CLIENT) {
+                                ClienteOrdersScreen(onNavigate = safeNavigate)
+                            } else {
+                                GestionVentasScreen(onNavigate = safeNavigate)
                             }
+                        }
+                        composable(Screen.perfil.route) {
+                            PerfilScreen(viewModel = perfilViewModel)
+                        }
+                        // Ruta para el carrito del cliente
+                        composable(Screen.carrito.route) {
+                            CartScreen(onCheckout = {
+                                // después de confirmar, navegar a Pedidos (ruta estática)
+                                safeNavigate(Screen.Pedidos.route)
+                            })
+                        }
+                         composable(
+                             Screen.detalle.route,
+                             arguments = listOf(navArgument("productoId") { type = NavType.StringType })
+                         ) { backStackEntry ->
+                             val productoId = backStackEntry.arguments?.getString("productoId")
+                             ClienteProductoDetailScreen(productoId = productoId, productoViewModel = productoViewModel, onBack = { navController.popBackStack() })
+                         }
 
-                        } // fin NavHost
-                    } // fin AppShell
-                } // fin Scaffold
-            } // fin StorecomponentsTheme
-        } // fin setContent
-    } // fin onCreate
-} // fin MainActivity
+                     } // fin NavHost
+                  } // fin AppShell
+                 } // fin StorecomponentsTheme
+             } // fin setContent
+     } // fin onCreate
+ } // fin MainActivity

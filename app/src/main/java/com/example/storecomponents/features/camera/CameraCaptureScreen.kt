@@ -1,10 +1,6 @@
 package com.example.storecomponents.features.camera
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.YuvImage
-import android.util.Log
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -22,80 +18,65 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
-import java.io.ByteArrayOutputStream
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun CameraCaptureScreen(onPhotoCaptured: (Bitmap) -> Unit) {
+fun CameraCaptureScreen(cameraViewModel: CameraViewModel = viewModel(), onPhotoCaptured: (Bitmap) -> Unit = {}) {
     val context = LocalContext.current
     val lifecycleOwner = remember { context as LifecycleOwner }
-    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val capturedBitmap by cameraViewModel.capturedBitmap.collectAsState()
     val imageCapture = remember { ImageCapture.Builder().build() }
     val preview = remember { androidx.camera.core.Preview.Builder().build() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val cameraSelector = androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
-                preview.setSurfaceProvider(previewView.surfaceProvider)
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        imageCapture
-                    )
-                } catch (exc: Exception) {
-                    Log.e("CameraCaptureScreen", "Error al vincular cámara", exc)
-                }
-            }, ContextCompat.getMainExecutor(ctx))
-            previewView
-        }, modifier = Modifier.fillMaxSize())
+        if (capturedBitmap == null) {
+            AndroidView(factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val cameraSelector = androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
+                    preview.setSurfaceProvider(previewView.surfaceProvider)
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageCapture
+                        )
+                    } catch (exc: Exception) {
+                        // Log error
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+                previewView
+            }, modifier = Modifier.fillMaxSize())
 
-        Button(onClick = {
-            val executor = ContextCompat.getMainExecutor(context)
-            imageCapture.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    val bitmap = imageProxyToBitmap(image)
-                    capturedBitmap = bitmap
-                    onPhotoCaptured(bitmap)
-                    image.close()
-                }
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e("CameraCaptureScreen", "Error al capturar foto", exception)
-                }
-            })
-        }) {
-            Text("Capturar foto")
-        }
+            Button(onClick = {
+                val executor = ContextCompat.getMainExecutor(context)
+                imageCapture.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
+                    override fun onCaptureSuccess(image: ImageProxy) {
+                        val bitmap = cameraViewModel.imageProxyToBitmap(image)
+                        cameraViewModel.onPhotoCaptured(bitmap)
+                        // Notificar al llamador con la Bitmap (si proporcionó la lambda)
+                        onPhotoCaptured(bitmap)
+                        image.close()
+                    }
 
-        capturedBitmap?.let { bmp ->
-            Image(bitmap = bmp.asImageBitmap(), contentDescription = "Foto capturada", modifier = Modifier.fillMaxSize())
+                    override fun onError(exception: ImageCaptureException) {
+                        // Log error
+                    }
+                })
+            }) {
+                Text("Capturar foto")
+            }
+        } else {
+            capturedBitmap?.let { bmp ->
+                Image(bitmap = bmp.asImageBitmap(), contentDescription = "Foto capturada", modifier = Modifier.fillMaxSize())
+                Button(onClick = { cameraViewModel.clearCapturedPhoto() }) {
+                    Text("Volver a tomar")
+                }
+            }
         }
     }
-}
-
-// Utilidad para convertir ImageProxy a Bitmap
-fun imageProxyToBitmap(image: ImageProxy): Bitmap {
-    val yBuffer = image.planes[0].buffer // Y
-    val uBuffer = image.planes[1].buffer // U
-    val vBuffer = image.planes[2].buffer // V
-
-    val ySize = yBuffer.remaining()
-    val uSize = uBuffer.remaining()
-    val vSize = vBuffer.remaining()
-
-    val nv21 = ByteArray(ySize + uSize + vSize)
-    yBuffer.get(nv21, 0, ySize)
-    vBuffer.get(nv21, ySize, vSize)
-    uBuffer.get(nv21, ySize + vSize, uSize)
-
-    val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-    val out = ByteArrayOutputStream()
-    yuvImage.compressToJpeg(android.graphics.Rect(0, 0, image.width, image.height), 100, out)
-    val imageBytes = out.toByteArray()
-    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }

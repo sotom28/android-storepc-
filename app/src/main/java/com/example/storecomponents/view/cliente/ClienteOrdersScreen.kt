@@ -6,12 +6,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.storecomponents.viewmodel.CartViewModel
 import com.example.storecomponents.viewmodel.OrdersViewModel
 import com.example.storecomponents.viewmodel.StoreViewModel
+import com.example.storecomponents.navigation.Screen
 
 @Composable
 fun ClienteOrdersScreen(
@@ -72,7 +75,7 @@ fun ClienteOrdersScreen(
                         Text("Comprar")
                     }
 
-                    OutlinedButton(onClick = { onNavigate("cliente") }, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(onClick = { onNavigate(Screen.clienteMenu.route) }, modifier = Modifier.weight(1f)) {
                         Text("Volver")
                     }
                 }
@@ -96,6 +99,63 @@ fun ClienteOrdersScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun CartScreen(
+    cartViewModel: CartViewModel = viewModel(),
+    onCheckout: () -> Unit = {}
+) {
+    val items = cartViewModel.items
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(text = "Carrito", style = MaterialTheme.typography.headlineSmall)
+
+        if (items.isEmpty()) {
+            Text(text = "El carrito está vacío")
+            return@Column
+        }
+
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(items) { item ->
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Companion.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = item.nombre, style = MaterialTheme.typography.titleMedium)
+                        Text(text = "Precio: $${"%.2f".format(item.precio)}", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    IconButton(onClick = { cartViewModel.updateQuantity(item.productoId, item.cantidad - 1) }) {
+                        Text(text = "-")
+                    }
+
+                    Text(text = item.cantidad.toString(), modifier = Modifier.padding(horizontal = 8.dp))
+
+                    IconButton(onClick = { cartViewModel.updateQuantity(item.productoId, item.cantidad + 1) }) {
+                        Text(text = "+")
+                    }
+
+                    IconButton(onClick = { cartViewModel.remove(item.productoId) }) {
+                        Text(text = "Eliminar")
+                    }
+                }
+            }
+        }
+
+        Text(text = "Total: $${"%.2f".format(cartViewModel.total())}")
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { cartViewModel.clear() }) {
+                Text(text = "Vaciar carrito")
+            }
+            Button(onClick = onCheckout) {
+                Text(text = "Comprar")
             }
         }
     }

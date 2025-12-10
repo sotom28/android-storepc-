@@ -34,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import com.example.storecomponents.data.model.Producto
 import com.example.storecomponents.viewmodel.ProductoViewModel
 import java.util.UUID
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
 
 @Composable
 fun ProductListScreen(onOpenProduct: (Producto) -> Unit = {}, productoViewModel: ProductoViewModel = viewModel()) {
@@ -72,11 +78,30 @@ fun ProductListScreen(onOpenProduct: (Producto) -> Unit = {}, productoViewModel:
                         .clickable { onOpenProduct(product) }
                         .padding(vertical = 8.dp)
                     ) {
-                        Text(text = product.nombre)
-                        Text(text = "Precio: $${"%.2f".format(product.precio)}")
-                        Text(text = "Stock: ${product.stock}")
-                        Text(text = "Categoría: ${product.categoria}")
-                        Text(text = "Descripción: ${product.descripcion}")
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (product.imagenUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = product.imagenUrl,
+                                    contentDescription = product.nombre,
+                                    modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                    Text(text = "No img")
+                                }
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = product.nombre)
+                                Text(text = "Descripción: ${product.descripcion}")
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(text = "Precio: $${"%.2f".format(product.precio)}")
+                                Text(text = "Stock: ${product.stock}")
+                            }
+                        }
 
                         // Botones de acción para cada producto
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

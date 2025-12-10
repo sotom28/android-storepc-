@@ -1,5 +1,6 @@
 package com.example.storecomponents.view
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,8 +56,14 @@ fun AdminMenuScreen(
         colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
     )
 
-    Scaffold(
-        topBar = {
+    // Usamos el AppShell global para mostrar la topBar/bottomBar; insertamos un header visual en el contenido
+    Scaffold() { padding ->
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+
+            // Header visual replicando el estilo anterior (gradiente + título + logout)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -84,28 +91,8 @@ fun AdminMenuScreen(
                     }
                 }
             }
-        },
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                bottomNavItems.forEach { nav ->
-                    NavigationBarItem(
-                        selected = selectedRoute == nav.route,
-                        onClick = {
-                            selectedRoute = nav.route
-                            // Navegar directamente; la pantalla de gestión mostrará info si no hay gestor asignado
-                            onNavigate(nav.route)
-                        },
-                        icon = { Icon(nav.icon, contentDescription = nav.title) },
-                        label = { Text(nav.title) }
-                    )
-                }
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Acciones rápidas",
@@ -123,8 +110,9 @@ fun AdminMenuScreen(
                                 // asignar selección y navegar sin bloquear por falta de gestor
                                 selectedRoute = item.route
                                 onNavigate(item.route)
-                                // feedback rápido para confirmar el click
-                                Toast.makeText(context, "Abrir: ${item.title}", Toast.LENGTH_SHORT).show()
+                                // feedback rápido para confirmar el click y ruta (diagnóstico)
+                                Log.d("AdminMenu", "navegar a ruta=${item.route} titulo=${item.title}")
+                                Toast.makeText(context, "Navegando a: ${item.route} (${item.title})", Toast.LENGTH_SHORT).show()
                             }
                     ) {
                         Row(modifier = Modifier
@@ -153,21 +141,22 @@ fun AdminMenuScreen(
                                 // navegar directamente sin bloquear por falta de gestor
                                 selectedRoute = item.route
                                 onNavigate(item.route)
-                                Toast.makeText(context, "Abrir: ${item.title}", Toast.LENGTH_SHORT).show()
+                                Log.d("AdminMenu", "navegar a ruta=${item.route} titulo=${item.title}")
+                                Toast.makeText(context, "Navegando a: ${item.route} (${item.title})", Toast.LENGTH_SHORT).show()
                             }) { Text("Abrir") }
-                        }
-                    }
-                }
+                         }
+                     }
+                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    if (showLogout) {
-                        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = "Cerrar sesión")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+                 item {
+                     Spacer(modifier = Modifier.height(12.dp))
+                     if (showLogout) {
+                         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+                             Text(text = "Cerrar sesión")
+                         }
+                     }
+                 }
+             }
+         }
+     }
+ }

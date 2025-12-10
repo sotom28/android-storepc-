@@ -196,6 +196,9 @@ fun GestionVentasScreen(
                                     Surface(
                                         color = when (o.status) {
                                             "PENDIENTE" -> MaterialTheme.colorScheme.secondary
+                                            "PROCESANDO" -> MaterialTheme.colorScheme.tertiaryContainer
+                                            "EN_CAMINO" -> MaterialTheme.colorScheme.primary
+                                            "PAGADO" -> MaterialTheme.colorScheme.secondaryContainer
                                             "ENVIADO" -> MaterialTheme.colorScheme.tertiary
                                             "ENTREGADO" -> MaterialTheme.colorScheme.primaryContainer
                                             "CANCELADO" -> MaterialTheme.colorScheme.errorContainer

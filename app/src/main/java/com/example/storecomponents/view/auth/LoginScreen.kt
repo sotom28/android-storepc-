@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.storecomponents.viewmodel.StoreViewModel
+import com.example.storecomponents.navigation.Screen
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: StoreViewModel) {
@@ -50,7 +51,8 @@ fun LoginScreen(navController: NavController, viewModel: StoreViewModel) {
             onClick = {
                 val user = viewModel.login(email, password)
                 if (user != null) {
-                    navController.navigate("client_menu")
+                    // Navegar usando las rutas centralizadas en Screen
+                    navController.navigate(Screen.clienteMenu.route)
                 } else {
                     error = "Invalid credentials"
                 }
@@ -60,7 +62,7 @@ fun LoginScreen(navController: NavController, viewModel: StoreViewModel) {
             Text("Login")
         }
         TextButton(
-            onClick = { navController.navigate("register") },
+            onClick = { navController.navigate(Screen.register.route) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Don't have an account? Register")

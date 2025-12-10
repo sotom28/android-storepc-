@@ -58,11 +58,16 @@ fun AppShell(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
     title: String = "StorePC",
+    showTopBar: Boolean = true,
     showBottomBar: Boolean = true,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
-        topBar = { AppTopBar(title = title, showLogo = true) },
+        topBar = {
+            if (showTopBar) {
+                AppTopBar(title = title, showLogo = true)
+            }
+        },
         bottomBar = {
             if (showBottomBar) AppBottomBar(currentRoute = currentRoute, onNavigate = onNavigate)
         }

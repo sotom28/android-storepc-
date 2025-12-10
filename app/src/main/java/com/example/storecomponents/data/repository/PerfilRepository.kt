@@ -4,8 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
-import com.example.storecomponents.viewmodel.Purchase
-import com.example.storecomponents.viewmodel.User
+import com.example.storecomponents.data.model.Purchase
+import com.example.storecomponents.data.model.User
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream

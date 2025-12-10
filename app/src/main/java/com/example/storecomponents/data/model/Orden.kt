@@ -20,6 +20,8 @@ data class orderitem(
 enum class ordenestado {
     PENDIENTE,
     PROCESANDO,
+    EN_CAMINO,
+    PAGADO,
     ENVIADO,
     ENTREGADO,
     CANCELADO

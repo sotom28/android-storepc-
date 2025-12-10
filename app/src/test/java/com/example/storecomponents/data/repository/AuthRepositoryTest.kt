@@ -7,7 +7,7 @@ class AuthRepositoryTest {
     @Test
     fun login_success() {
         val repo = AuthRepository()
-        val result = repo.login("admin@store.com", "admin1232")
+        val result = repo.login("admin@store.com", "admin123")
         assertTrue(result.isSuccess)
         val user = result.getOrNull()
         assertNotNull(user)
@@ -22,4 +22,3 @@ class AuthRepositoryTest {
         assertTrue(result.isFailure)
     }
 }
-

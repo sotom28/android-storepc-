@@ -1,6 +1,7 @@
 package com.example.storecomponents.view
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
@@ -8,14 +9,20 @@ import androidx.compose.runtime.setValue
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,6 +66,7 @@ private fun Producto.toFormState(): FormState {
 
 
 @SuppressLint("UnrememberedMutableState")
+@Suppress("UNUSED_PARAMETER")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionProductoScreen(
@@ -68,16 +76,23 @@ fun GestionProductoScreen(
     currentRoute: String? = "productos", // Mantenemos por compatibilidad con BottomBar
     onNavigate: (String) -> Unit = {}
 ) {
-    // Determina si estamos en modo edición o creación
-    val isEditing = productoId != null
+    // Determina si estamos en modo edición o creación.
+    // Usamos un estado local `editingId` para permitir editar productos desde la lista sin depender exclusivamente del parámetro de navegación.
+    var editingId by remember { mutableStateOf(productoId) }
+    // Hacemos que isEditing sea reactivo para que cambie cuando editingId se actualiza
+    val isEditing by derivedStateOf { editingId != null }
     val title = if (isEditing) "Editar Producto" else "Agregar Producto"
 
     // 2. Usamos la clase de estado para el formulario
     var formState by remember { mutableStateOf(FormState()) }
 
-    // Obtenemos el producto solo una vez si estamos en modo edición
+    // Observamos la lista de productos desde el ViewModel
+    val productos by productoViewModel.productos.collectAsState(initial = emptyList<Producto>())
+
+    // Obtenemos el producto solo una vez si estamos en modo edición desde la ruta
     LaunchedEffect(productoId) {
-        if (isEditing) {
+        if (productoId != null) {
+            editingId = productoId
             productoViewModel.productos.value.find { it.id == productoId }?.let { productoEncontrado ->
                 formState = productoEncontrado.toFormState()
             }
@@ -92,37 +107,47 @@ fun GestionProductoScreen(
     }
 
     Scaffold(
-        topBar = {
-            // 4. TopBar con botón de navegación para volver atrás
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver atrás")
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            // La BottomBar puede ser opcional aquí si interfiere con la tarea de edición
-            AppBottomBar(currentRoute = currentRoute, onNavigate = onNavigate)
-        },
+        // Top bar global provista por AppShell; aquí insertamos el header visual dentro del contenido
         floatingActionButton = {
-            // El FAB ahora solo aparece si estás editando, para permitir crear uno nuevo
-            if (isEditing) {
-                FloatingActionButton(onClick = {
-                    // Limpiamos el ID y el estado para pasar a modo "Crear Producto"
-                    // Esto requeriría que el ID en la navegación sea nulable.
-                    // Una mejor opción sería navegar a la misma pantalla sin ID.
-                    // Por ahora, lo dejamos como una limpieza simple del formulario actual:
-                    formState = FormState()
-                    // Idealmente, se debería navegar a la ruta de creación.
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear Nuevo Producto")
-                }
+            // El FAB ahora sirve para limpiar el formulario y salir del modo edición local
+            FloatingActionButton(onClick = {
+                formState = FormState()
+                editingId = null
+            }) {
+                Icon(Icons.Default.Add, contentDescription = "Nuevo Producto")
             }
         }
     ) { padding ->
+        // Header visual (gradiente con título y botón volver) para mantener apariencia sin duplicar TopBar
+        // Obtener colores del tema antes de la lambda de remember (MaterialTheme.* es @Composable)
+        val colors = MaterialTheme.colorScheme
+        // Definimos el Brush una sola vez y lo recordamos para evitar recomposiciones costosas
+        val topGradient = remember {
+            Brush.horizontalGradient(listOf(colors.primary, colors.secondary))
+        }
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Box(modifier = Modifier
+                .background(topGradient)
+                .fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver atrás")
+                    }
+                    Text(text = title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // 5. Usamos LazyColumn para que el formulario sea desplazable
         LazyColumn(
             modifier = Modifier
@@ -194,14 +219,17 @@ fun GestionProductoScreen(
                 Button(
                     onClick = {
                         // Generar id al crear; si estamos editando usamos el id existente
-                        val idToUse = if (isEditing) (productoId ?: UUID.randomUUID().toString()) else UUID.randomUUID().toString()
+                        val idToUse = if (isEditing) editingId!! else UUID.randomUUID().toString()
                         val productoParaGuardar = formState.toProducto(id = idToUse)
                         if (isEditing) {
                             productoViewModel.actualizarProducto(productoParaGuardar)
                         } else {
                             productoViewModel.agregarProducto(productoParaGuardar)
                         }
-                        onNavigateBack() // Volvemos a la pantalla anterior tras guardar
+                        // No navegamos atrás para que el usuario pueda seguir añadiendo/editar.
+                        // Limpiamos el formulario y salimos del modo edición local.
+                        formState = FormState()
+                        editingId = null
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,6 +237,40 @@ fun GestionProductoScreen(
                     enabled = isFormValid // 6. El botón se activa solo si el formulario es válido
                 ) {
                     Text(if (isEditing) "Guardar Cambios" else "Agregar Producto")
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            // Lista de productos guardados debajo del formulario
+            item {
+                Text(text = "Productos guardados", style = MaterialTheme.typography.titleMedium)
+            }
+
+            // Mostrar cada producto con acciones editar/eliminar
+            items(items = productos) { p ->
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = p.nombre, style = MaterialTheme.typography.titleSmall)
+                            Text(text = p.descripcion, style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Precio: ${p.precio} · Stock: ${p.stock}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row {
+                            IconButton(onClick = {
+                                // Poner el producto en modo edición rellenando el formulario
+                                editingId = p.id
+                                formState = p.toFormState()
+                            }) {
+                                Icon(Icons.Filled.Edit, contentDescription = "Editar")
+                            }
+                            IconButton(onClick = { productoViewModel.eliminarProducto(p.id) }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
+                            }
+                        }
+                    }
                 }
             }
 

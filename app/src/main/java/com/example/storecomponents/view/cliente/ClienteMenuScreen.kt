@@ -22,11 +22,11 @@ data class MenuItem(val title: String, val route: String)
 @Composable
 fun ClienteMenuScreen(onNavigate: (String) -> Unit = {}, onLogout: () -> Unit = {}) {
     val items = listOf(
-        MenuItem("Productos", Screen.ProductoList.route),
+        MenuItem("Productos", Screen.productos.route),
         MenuItem("Mi Carrito", Screen.carrito.route),
         MenuItem("Mis Pedidos", Screen.Pedidos.route),
         MenuItem("Mi Perfil", "perfil"),
-        MenuItem("Gestión de Productos", "gestion_productos")
+
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {

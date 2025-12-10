@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.storecomponents.network.*
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -36,9 +39,9 @@ data class StoreUser(
             name = obj.optString("name"),
             role = obj.optString("role"),
             isSalesManager = obj.optBoolean("isSalesManager", false),
-            email = obj.optString("email", null),
-            password = obj.optString("password", null),
-            direccion = obj.optString("direccion", null)
+            email = obj.optString("email").takeIf { it.isNotEmpty() },
+            password = obj.optString("password").takeIf { it.isNotEmpty() },
+            direccion = obj.optString("direccion").takeIf { it.isNotEmpty() }
         )
     }
 }
@@ -62,9 +65,9 @@ data class StoreProduct(
         fun fromJson(obj: JSONObject): StoreProduct = StoreProduct(
             id = obj.optLong("id"),
             name = obj.optString("name"),
-            description = obj.optString("description", null),
+            description = obj.optString("description").takeIf { it.isNotEmpty() },
             price = obj.optDouble("price", 0.0),
-            imageUrl = obj.optString("imageUrl", null)
+            imageUrl = obj.optString("imageUrl").takeIf { it.isNotEmpty() }
         )
     }
 }
@@ -83,16 +86,53 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     private val productsKey = "products_json"
     private val prefs = application.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
+    // Retrofit API client (apunta a 10.0.2.2:8080 para emulador)
+    private val api = RetrofitClient.create()
+
     init {
         loadFromPrefs()
     }
 
     // --- Usuarios CRUD ---
+    /**
+     * Intenta registrar el usuario en el backend (http://10.0.2.2:8080). Si la llamada falla
+     * se guarda localmente en SharedPreferences como fallback.
+     */
     fun addUser(name: String, role: String, email: String? = null, password: String? = null, direccion: String? = null) {
-        val newId = if (_users.isEmpty()) 1L else (_users.maxOf { it.id } + 1)
-        val u = StoreUser(newId, name, role, false, email, password, direccion)
-        _users.add(u)
-        saveUsersToPrefs()
+        viewModelScope.launch {
+            val newIdLocal = if (_users.isEmpty()) 1L else (_users.maxOf { it.id } + 1)
+            // construir DTO para enviar al backend (id null para que el servidor lo asigne)
+            val dto = UserDto(
+                id = null,
+                name = name,
+                role = role,
+                isSalesManager = false,
+                email = email,
+                password = password,
+                direccion = direccion
+            )
+
+            try {
+                val resp = api.registerUser(dto)
+                if (resp.isSuccessful) {
+                    val body = resp.body()
+                    val assignedId = body?.id ?: newIdLocal
+                    val u = StoreUser(assignedId, name, role, false, email, password, direccion)
+                    _users.add(u)
+                    saveUsersToPrefs()
+                } else {
+                    // fallback local si el servidor responde con error
+                    val u = StoreUser(newIdLocal, name, role, false, email, password, direccion)
+                    _users.add(u)
+                    saveUsersToPrefs()
+                }
+            } catch (e: Exception) {
+                // problemas de red -> guardar localmente
+                val u = StoreUser(newIdLocal, name, role, false, email, password, direccion)
+                _users.add(u)
+                saveUsersToPrefs()
+            }
+        }
     }
 
     fun updateUser(id: Long, name: String, role: String, email: String? = null, password: String? = null, direccion: String? = null) {
