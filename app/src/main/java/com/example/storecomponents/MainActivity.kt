@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import com.example.storecomponents.navigation.Screen
 import androidx.fragment.app.FragmentActivity
+import com.example.storecomponents.view.GestionProductoScreen
 
 class MainActivity : FragmentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -148,7 +149,6 @@ class MainActivity : FragmentActivity() {
                             )
                         }
 
-                        // NUEVA RUTA - Detalle del producto
                         composable(
                             route = "producto_detalle/{productoId}",
                             arguments = listOf(navArgument("productoId") { type = NavType.StringType })
@@ -185,6 +185,16 @@ class MainActivity : FragmentActivity() {
                                     }
                                 }
                             }
+                        }
+
+                        composable(Screen.gestionProductos.route) {
+                            GestionProductoScreen(
+                                productoViewModel = productoViewModel,
+                                productoId = null,
+                                onNavigateBack = { navController.popBackStack() },
+                                currentRoute = Screen.gestionProductos.route,
+                                onNavigate = { route -> navController.navigate(route) }
+                            )
                         }
 
                         composable("carrito") {

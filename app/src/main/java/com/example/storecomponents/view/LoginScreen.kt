@@ -114,7 +114,7 @@ fun LoginScreen(
         Button(
             onClick = {
                 Toast.makeText(context, "Intentando login como cliente...", Toast.LENGTH_SHORT).show()
-                onLogin("cliente@store.com", "cliente123")
+                onLogin("minillorsh", "123456as")
                 //Toast.makeText(context, "Navegando a la pantalla de productos...", Toast.LENGTH_SHORT).show()
                 //onNavigateToProducts()
             },
@@ -126,7 +126,7 @@ fun LoginScreen(
         Button(
             onClick = {
                 Toast.makeText(context, "Intentando login como admin...", Toast.LENGTH_SHORT).show()
-                onLogin("admin@store.com", "admin123")
+                onLogin("admin", "admin123")
             },
             modifier = Modifier.fillMaxWidth()
         ) {

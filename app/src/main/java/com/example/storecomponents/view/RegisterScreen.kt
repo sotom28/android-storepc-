@@ -1,29 +1,22 @@
 package com.example.storecomponents.view
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.storecomponents.viewmodel.AuthViewModel
+import com.example.storecomponents.viewmodel.EstadoAuth
 
 @Composable
 fun RegisterScreen(
@@ -32,114 +25,206 @@ fun RegisterScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val registerState by authViewModel.registerState.collectAsState()
 
-    var name by rememberSaveable { mutableStateOf("") }
+    var nombreReal by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
-    var role by rememberSaveable { mutableStateOf("cliente") }
+    var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
-    var direccion by rememberSaveable { mutableStateOf("") }
 
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Observar el estado del registro
+    LaunchedEffect(registerState) {
+        when (registerState) {
+            is EstadoAuth.Cargando -> {
+                isLoading = true
+                errorMessage = null
+            }
+            is EstadoAuth.Exito -> {
+                isLoading = false
+                Toast.makeText(context, "¡Registro exitoso!", Toast.LENGTH_SHORT).show()
+                authViewModel.resetRegisterState()
+                onRegistered()
+            }
+            is EstadoAuth.Error -> {
+                isLoading = false
+                errorMessage = (registerState as EstadoAuth.Error).mensaje
+            }
+            else -> {
+                isLoading = false
+            }
+        }
+    }
 
     Column(
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Registrar usuario", style = MaterialTheme.typography.titleLarge)
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nombre") },
-            modifier = Modifier.fillMaxWidth()
+        Text(
+            text = "Crear Cuenta",
+            style = MaterialTheme.typography.headlineMedium
         )
 
-        OutlinedTextField(
-            value = role,
-            onValueChange = { role = it },
-            label = { Text("Rol (ej: cliente, admin, vendedor)") },
-            modifier = Modifier.fillMaxWidth()
+        Text(
+            text = "Completa el formulario para registrarte",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Nombre Real
+        OutlinedTextField(
+            value = nombreReal,
+            onValueChange = { nombreReal = it },
+            label = { Text("Nombre Completo") },
+            placeholder = { Text("Ej: Juan Pérez") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true
+        )
+
+        // Username
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it.lowercase().trim() },
+            label = { Text("Nombre de Usuario") },
+            placeholder = { Text("Ej: juanperez") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true,
+            supportingText = { Text("Sin espacios ni caracteres especiales") }
+        )
+
+        // Email
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { email = it.trim() },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
+            placeholder = { Text("Ej: juan@ejemplo.com") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true
         )
 
+        // Password
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true,
+            supportingText = { Text("Mínimo 6 caracteres") }
         )
 
+        // Confirmar Password
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Confirmar contraseña") },
+            label = { Text("Confirmar Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading,
+            singleLine = true
         )
 
-        OutlinedTextField(
-            value = direccion,
-            onValueChange = { direccion = it },
-            label = { Text("Dirección") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
+        // Mensaje de error
         if (errorMessage != null) {
-            Text(text = errorMessage!!, color = androidx.compose.ui.graphics.Color.Red)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
         }
 
-        Button(onClick = {
-            // Validaciones básicas
-            errorMessage = null
-            if (name.isBlank() || role.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                errorMessage = "Complete todos los campos"
-                return@Button
-            }
-            if (!email.contains("@")) {
-                errorMessage = "Email inválido"
-                return@Button
-            }
-            if (password.length < 6) {
-                errorMessage = "La contraseña debe tener al menos 6 caracteres"
-                return@Button
-            }
-            if (password != confirmPassword) {
-                errorMessage = "Las contraseñas no coinciden"
-                return@Button
-            }
+        Spacer(modifier = Modifier.height(8.dp))
 
-            // Usar AuthViewModel para registrar y auto-logear
-            authViewModel.register(name.trim(), email.trim(), role.trim(), password.trim())
+        // Botón de Registro
+        Button(
+            onClick = {
+                // Validaciones
+                errorMessage = null
 
-            Toast.makeText(context, "Usuario registrado", Toast.LENGTH_SHORT).show()
-            // limpiar formulario opcional
-            name = ""
-            role = "cliente"
-            email = ""
-            password = ""
-            confirmPassword = ""
-            direccion = ""
+                if (nombreReal.isBlank()) {
+                    errorMessage = "Ingresa tu nombre completo"
+                    return@Button
+                }
 
-            onRegistered()
-        }, modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Registrar")
+                if (username.isBlank()) {
+                    errorMessage = "Ingresa un nombre de usuario"
+                    return@Button
+                }
+
+                if (username.length < 3) {
+                    errorMessage = "El nombre de usuario debe tener al menos 3 caracteres"
+                    return@Button
+                }
+
+                if (email.isBlank() || !email.contains("@")) {
+                    errorMessage = "Ingresa un email válido"
+                    return@Button
+                }
+
+                if (password.length < 6) {
+                    errorMessage = "La contraseña debe tener al menos 6 caracteres"
+                    return@Button
+                }
+
+                if (password != confirmPassword) {
+                    errorMessage = "Las contraseñas no coinciden"
+                    return@Button
+                }
+
+                // Llamar al registro
+                authViewModel.register(
+                    nombreReal = nombreReal.trim(),
+                    email = email.trim(),
+                    usernameOrRole = username.trim(),
+                    password = password.trim()
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Registrando...")
+            } else {
+                Text("Crear Cuenta")
+            }
+        }
+
+        // Botón para volver al login
+        TextButton(
+            onClick = { onRegistered() },
+            enabled = !isLoading
+        ) {
+            Text("¿Ya tienes cuenta? Inicia sesión")
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun RegisterScreenPreview() {

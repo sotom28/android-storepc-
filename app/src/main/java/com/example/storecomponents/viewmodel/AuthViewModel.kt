@@ -1,151 +1,130 @@
 package com.example.storecomponents.viewmodel
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.storecomponents.data.model.Usuarios
-import com.example.storecomponents.data.repository.AuthRepository
 import com.example.storecomponents.data.model.Userole
+import com.example.storecomponents.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-enum class UserRole {CLIENT , ADMIN,NOME}
+// Enum para roles (compatible con tu MainActivity)
+enum class UserRole {
+    ADMIN,
+    CLIENT,
+    NONE
+}
+
+// Estados de autenticación (compatible con tu MainActivity)
+sealed class EstadoAuth {
+    object Inicial : EstadoAuth()
+    object Cargando : EstadoAuth()
+    data class Exito(val usuario: Usuarios) : EstadoAuth()
+    data class Error(val mensaje: String) : EstadoAuth()
+}
 
 class AuthViewModel(
-    // Inyección de dependencia del repositorio de autenticación
-    private val authRepository: AuthRepository = AuthRepository()
+    private val repository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
+    val usuarioActual = repository.usuarioActual
+
+    // Estado del rol actual (compatible con MainActivity)
+    private val _role = MutableStateFlow<UserRole>(UserRole.NONE)
+    val role: StateFlow<UserRole> = _role.asStateFlow()
+
+    // Estado de autenticación (compatible con MainActivity)
     private val _estadoAuth = MutableStateFlow<EstadoAuth>(EstadoAuth.Inicial)
-    val estadoAuth: StateFlow<EstadoAuth> = _estadoAuth
+    val estadoAuth: StateFlow<EstadoAuth> = _estadoAuth.asStateFlow()
 
-    // estado simple de rol para facilitar la comprobación desde la UI
-    private val _role = MutableStateFlow(UserRole.NOME)
-    val role: StateFlow<UserRole> = _role
+    // Estado de registro
+    private val _registerState = MutableStateFlow<EstadoAuth>(EstadoAuth.Inicial)
+    val registerState: StateFlow<EstadoAuth> = _registerState.asStateFlow()
 
-    val usuarioActual = authRepository.usuarioActual
-
-    // Método para iniciar sesión con correo electrónico y contraseña
-    fun login(email: String, password: String) {
-        viewModelScope.launch {
-            _estadoAuth.value = EstadoAuth.Cargando
-            val resultado = authRepository.login(email, password)
-            _estadoAuth.value = if (resultado.isSuccess) {
-                // actualizar rol según el usuario devuelto
-                val user = resultado.getOrNull()!!
-                _role.value = if (user.role == Userole.ADMIN) UserRole.ADMIN else UserRole.CLIENT
-                EstadoAuth.Exito(user)
-            } else {
-                _role.value = UserRole.NOME
-                EstadoAuth.Error(resultado.exceptionOrNull()?.message ?: "Error desconocido")
-            }
-        }
-    }
-
-    // Nuevo método: login por username (credenciales de ejemplo)
-    // usuario ejemplo cliente: username = "cliente 1" o "cliente1" o correo "cliente@store.com", password = "cliente123"
-    // usuario ejemplo admin: username contiene "admin" y password == "admin123"
+    /**
+     * Login por username (compatible con tu MainActivity)
+     */
     fun loginByUsername(username: String, password: String) {
         viewModelScope.launch {
             _estadoAuth.value = EstadoAuth.Cargando
 
-            val normalized = username.trim().lowercase()
+            val result = repository.login(username, password)
 
-            // caso cliente de ejemplo (acepta varias variantes)
-            if ((normalized.contains("cliente") || normalized == "cliente@store.com") && password == "cliente123") {
-                val user = Usuarios(
-                    id = 2,
-                    nombre = username,
-                    correo = "cliente@store.com",
-                    role = Userole.CLIENT,
-                    password = password,
-                    confirmarPassword = "",
-                    direccion = ""
-                )
-                _role.value = UserRole.CLIENT
-                _estadoAuth.value = EstadoAuth.Exito(user)
-                println("AuthViewModel: loginByUsername -> SUCCESS CLIENT normalized='$normalized'")
-                return@launch
-            }
+            if (result.isSuccess) {
+                val usuario = result.getOrNull()!!
 
-            // caso admin de ejemplo
-            if (normalized.contains("admin") && password == "admin123") {
-                val user = Usuarios(
-                    id = 1,
-                    nombre = username,
-                    correo = "admin@store.com",
-                    role = Userole.ADMIN,
-                    password = password,
-                    confirmarPassword = "",
-                    direccion = ""
-                )
-                _role.value = UserRole.ADMIN
-                _estadoAuth.value = EstadoAuth.Exito(user)
-                println("AuthViewModel: loginByUsername -> SUCCESS ADMIN normalized='$normalized'")
-                return@launch
-            }
+                // Actualizar el rol según el usuario
+                _role.value = when (usuario.role) {
+                    Userole.ADMIN -> UserRole.ADMIN
+                    Userole.CLIENT -> UserRole.CLIENT
+                }
 
-            // fallback: intentar con repositorio usando el campo correo
-            val resultado = authRepository.login(username, password)
-            if (resultado.isSuccess) {
-                val user = resultado.getOrNull()!!
-                _role.value = if (user.role == Userole.ADMIN) UserRole.ADMIN else UserRole.CLIENT
-                _estadoAuth.value = EstadoAuth.Exito(user)
-                println("AuthViewModel: loginByUsername -> SUCCESS REPO username='$username'")
+                _estadoAuth.value = EstadoAuth.Exito(usuario)
             } else {
-                _role.value = UserRole.NOME
-                _estadoAuth.value = EstadoAuth.Error("Credenciales inválidas")
-                println("AuthViewModel: loginByUsername -> FAILED normalized='$normalized'")
+                _estadoAuth.value = EstadoAuth.Error(
+                    result.exceptionOrNull()?.message ?: "Error desconocido"
+                )
             }
         }
     }
 
-    // Nuevo: registrar y auto-logear
-    fun register(name: String, email: String, roleStr: String, password: String, confirmarPassword: String = "", direccion: String = "") {
+    /**
+     * Login estándar (alternativa)
+     */
+    fun login(username: String, password: String) {
+        loginByUsername(username, password)
+    }
+
+    /**
+     * Registro con backend - Firma compatible con RegisterScreen
+     * Parámetros: nombreReal, email, usernameOrRole, password
+     */
+    fun register(
+        nombreReal: String,
+        email: String,
+        usernameOrRole: String,
+        password: String
+    ) {
         viewModelScope.launch {
-            _estadoAuth.value = EstadoAuth.Cargando
-            try {
-                // determinar role
-                val role = if (roleStr.equals("admin", ignoreCase = true)) Userole.ADMIN else Userole.CLIENT
-                // calcular id nuevo
-                val existing = authRepository.obtenerTodosLosUsuarios()
-                val newId = (existing.maxOfOrNull { it.id } ?: 0) + 1
-                val nuevo = Usuarios(id = newId, nombre = name, correo = email, role = role, password = password, confirmarPassword = confirmarPassword, direccion = direccion)
+            _registerState.value = EstadoAuth.Cargando
 
-                val reg = authRepository.registro(nuevo)
-                if (reg.isSuccess) {
-                    // después de registrar, intentar login para activar la sesión
-                    val loginRes = authRepository.login(email, password)
-                    if (loginRes.isSuccess) {
-                        val user = loginRes.getOrNull()!!
-                        _role.value = if (user.role == Userole.ADMIN) UserRole.ADMIN else UserRole.CLIENT
-                        _estadoAuth.value = EstadoAuth.Exito(user)
-                    } else {
-                        _role.value = UserRole.NOME
-                        _estadoAuth.value = EstadoAuth.Error("Registro OK, pero login falló: ${loginRes.exceptionOrNull()?.message}")
-                    }
-                } else {
-                    _role.value = UserRole.NOME
-                    _estadoAuth.value = EstadoAuth.Error(reg.exceptionOrNull()?.message ?: "Error al registrar")
-                }
+            // usernameOrRole es el username del usuario
+            val username = usernameOrRole.trim()
 
-            } catch (e: Exception) {
-                _role.value = UserRole.NOME
-                _estadoAuth.value = EstadoAuth.Error(e.message ?: "Error desconocido")
+            val result = repository.registro(
+                username = username,
+                nombreReal = nombreReal,
+                email = email,
+                password = password
+            )
+
+            if (result.isSuccess) {
+                val usuario = result.getOrNull()!!
+                _registerState.value = EstadoAuth.Exito(usuario)
+            } else {
+                _registerState.value = EstadoAuth.Error(
+                    result.exceptionOrNull()?.message ?: "Error desconocido"
+                )
             }
         }
     }
 
     fun cerrarSesion() {
-        authRepository.cerrarSesion()
+        repository.cerrarSesion()
+        _role.value = UserRole.NONE
         _estadoAuth.value = EstadoAuth.Inicial
-        _role.value = UserRole.NOME
+        _registerState.value = EstadoAuth.Inicial
     }
-}
-////
-sealed class EstadoAuth{
-    object Inicial : EstadoAuth()
-    object Cargando : EstadoAuth()
-    data class Exito(val usuario: Usuarios) : EstadoAuth()
-    data class Error (val mensaje: String) : EstadoAuth()
 
+    fun resetLoginState() {
+        _estadoAuth.value = EstadoAuth.Inicial
+    }
+
+    fun resetRegisterState() {
+        _registerState.value = EstadoAuth.Inicial
+    }
+
+    fun isLoggedIn(): Boolean = repository.isLoggedIn()
 }

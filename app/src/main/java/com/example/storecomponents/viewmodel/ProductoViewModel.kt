@@ -10,52 +10,59 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-// ViewModel para gestionar productos
+sealed class ProductoEstado {
+    object Inicial : ProductoEstado()
+    object Cargando : ProductoEstado()
+    data class Exito(val productos: List<Producto>) : ProductoEstado()
+    data class Error(val mensaje: String) : ProductoEstado()
+}
+
 class ProductoViewModel(
-    private val productoRepository: ProductoRepository = ProductoRepository()
+    private val repository: ProductoRepository = ProductoRepository()
 ) : ViewModel() {
 
-    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
-    val productos: StateFlow<List<Producto>> = _productos.asStateFlow()
+    val productos = repository.productos
 
-    private val _estadoProducto = MutableStateFlow<EstadoProducto>(EstadoProducto.Inicial)
-    val estadoProducto: StateFlow<EstadoProducto> = _estadoProducto.asStateFlow()
+    private val _productosState = MutableStateFlow<ProductoEstado>(ProductoEstado.Inicial)
+    val productosState: StateFlow<ProductoEstado> = _productosState.asStateFlow()
 
-    // Estados para búsqueda y filtrado
+    // Estados para filtrado y búsqueda
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory.asStateFlow()
 
-    // Lista de categorías únicas
     private val _categories = MutableStateFlow<List<String>>(emptyList())
     val categories: StateFlow<List<String>> = _categories.asStateFlow()
 
-    // Productos filtrados según búsqueda y categoría
     private val _productosFiltrados = MutableStateFlow<List<Producto>>(emptyList())
     val productosFiltrados: StateFlow<List<Producto>> = _productosFiltrados.asStateFlow()
 
+    // StateFlow interno para mantener compatibilidad
+    private val _productosInterno = MutableStateFlow<List<Producto>>(emptyList())
+
     init {
         cargarProductos()
-        setupFiltros()
+        observarCambios()
     }
 
-    private fun cargarProductos() {
+    /**
+     * Observar cambios en productos, búsqueda y categoría para filtrar
+     */
+    private fun observarCambios() {
         viewModelScope.launch {
-            _productos.value = productoRepository.obtenerTodosLosProductos()
-            actualizarCategorias()
+            // Sincronizar con el repository
+            repository.productos.collect { productos ->
+                _productosInterno.value = productos
+                actualizarCategorias(productos)
+            }
         }
-    }
 
-    private fun actualizarCategorias() {
-        _categories.value = _productos.value.map { it.categoria }.distinct().sorted()
-    }
-
-    private fun setupFiltros() {
         viewModelScope.launch {
+            // Combinar productos, búsqueda y categoría para filtrar
             combine(
-                _productos,
+                _productosInterno,
                 _searchQuery,
                 _selectedCategory
             ) { productos, query, category ->
@@ -66,81 +73,173 @@ class ProductoViewModel(
         }
     }
 
+    /**
+     * Actualizar lista de categorías disponibles
+     */
+    private fun actualizarCategorias(productos: List<Producto>) {
+        val categoriasUnicas = productos
+            .map { it.categoria }
+            .distinct()
+            .sorted()
+        _categories.value = categoriasUnicas
+    }
+
+    /**
+     * Filtrar productos según búsqueda y categoría
+     */
     private fun filtrarProductos(
         productos: List<Producto>,
         query: String,
         category: String?
     ): List<Producto> {
-        return productos.filter { producto ->
-            val matchesQuery = query.isBlank() ||
-                    producto.nombre.contains(query, ignoreCase = true) ||
-                    producto.descripcion.contains(query, ignoreCase = true)
-            val matchesCategory = category == null || producto.categoria == category
-            matchesQuery && matchesCategory
+        var resultado = productos
+
+        // Filtrar por categoría
+        if (category != null) {
+            resultado = resultado.filter { it.categoria == category }
         }
+
+        // Filtrar por búsqueda
+        if (query.isNotBlank()) {
+            resultado = resultado.filter { producto ->
+                producto.nombre.contains(query, ignoreCase = true) ||
+                        producto.descripcion.contains(query, ignoreCase = true) ||
+                        producto.categoria.contains(query, ignoreCase = true)
+            }
+        }
+
+        return resultado
     }
 
-    // Funciones de búsqueda y filtrado
+    /**
+     * Actualizar consulta de búsqueda
+     */
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
 
+    /**
+     * Seleccionar categoría para filtrar
+     */
     fun onCategorySelected(category: String?) {
         _selectedCategory.value = category
     }
 
-    // Función para agregar un nuevo producto
+    /**
+     * Cargar productos desde el backend
+     */
+    fun cargarProductos() {
+        viewModelScope.launch {
+            _productosState.value = ProductoEstado.Cargando
+
+            val result = repository.cargarProductos()
+
+            _productosState.value = if (result.isSuccess) {
+                ProductoEstado.Exito(result.getOrNull() ?: emptyList())
+            } else {
+                ProductoEstado.Error(result.exceptionOrNull()?.message ?: "Error al cargar productos")
+            }
+        }
+    }
+
+    /**
+     * Obtener producto por ID (desde backend)
+     */
+    fun obtenerProductoPorId(id: Long, onResult: (Result<Producto>) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.obtenerProductoPorId(id)
+            onResult(result)
+        }
+    }
+
+    /**
+     * Filtrar productos por categoría (desde backend)
+     */
+    fun filtrarPorCategoria(categoria: String) {
+        viewModelScope.launch {
+            _productosState.value = ProductoEstado.Cargando
+
+            val result = repository.obtenerProductosPorCategoria(categoria)
+
+            _productosState.value = if (result.isSuccess) {
+                ProductoEstado.Exito(result.getOrNull() ?: emptyList())
+            } else {
+                ProductoEstado.Error(result.exceptionOrNull()?.message ?: "Error al filtrar")
+            }
+        }
+    }
+
+    /**
+     * Agregar producto - Compatible con GestionProductoScreen
+     */
     fun agregarProducto(producto: Producto) {
         viewModelScope.launch {
-            _estadoProducto.value = EstadoProducto.Cargando
-            val resultado = productoRepository.agregarProducto(producto)
-            _estadoProducto.value = if (resultado.isSuccess) {
-                cargarProductos() // Recarga productos y actualiza categorías
-                EstadoProducto.Exito("Producto agregado")
+            _productosState.value = ProductoEstado.Cargando
+
+            val result = repository.agregarProducto(producto)
+
+            if (result.isSuccess) {
+                // Recargar productos después de agregar
+                cargarProductos()
             } else {
-                EstadoProducto.Error(resultado.exceptionOrNull()?.message ?: "Error desconocido")
+                _productosState.value = ProductoEstado.Error(
+                    result.exceptionOrNull()?.message ?: "Error al agregar producto"
+                )
             }
         }
     }
 
-    // Función para actualizar un producto existente
+    /**
+     * Agregar producto con callback
+     */
+    fun agregarProducto(producto: Producto, onResult: (Result<Producto>) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.agregarProducto(producto)
+            onResult(result)
+
+            // Recargar productos después de agregar
+            if (result.isSuccess) {
+                cargarProductos()
+            }
+        }
+    }
+
+
     fun actualizarProducto(producto: Producto) {
         viewModelScope.launch {
-            _estadoProducto.value = EstadoProducto.Cargando
-            val resultado = productoRepository.actualizarProducto(producto)
-            _estadoProducto.value = if (resultado.isSuccess) {
-                cargarProductos()
-                EstadoProducto.Exito("Producto actualizado")
+            // TODO: Cuando el backend tenga el endpoint PUT, usar:
+            // val result = repository.actualizarProducto(producto)
+
+            // Por ahora, actualizamos localmente
+            val productosActuales = _productosInterno.value.toMutableList()
+            val index = productosActuales.indexOfFirst { it.id == producto.id }
+
+            if (index != -1) {
+                productosActuales[index] = producto
+                _productosInterno.value = productosActuales
+                _productosState.value = ProductoEstado.Exito(productosActuales)
             } else {
-                EstadoProducto.Error(resultado.exceptionOrNull()?.message ?: "Error desconocido")
+                _productosState.value = ProductoEstado.Error("Producto no encontrado")
             }
         }
     }
 
-    // Función para eliminar un producto por su ID
     fun eliminarProducto(productoId: String) {
         viewModelScope.launch {
-            _estadoProducto.value = EstadoProducto.Cargando
-            val resultado = productoRepository.eliminarProducto(productoId)
-            _estadoProducto.value = if (resultado.isSuccess) {
-                cargarProductos()
-                EstadoProducto.Exito("Producto eliminado")
-            } else {
-                EstadoProducto.Error(resultado.exceptionOrNull()?.message ?: "Error")
-            }
+            // TODO: Cuando el backend tenga el endpoint DELETE, usar:
+            // val result = repository.eliminarProducto(productoId)
+
+            // Por ahora, eliminamos localmente
+            val productosActuales = _productosInterno.value.filter { it.id != productoId }
+            _productosInterno.value = productosActuales
+            _productosState.value = ProductoEstado.Exito(productosActuales)
         }
     }
 
-    // Función para limpiar el estado después de mostrar un mensaje
-    fun limpiarEstado() {
-        _estadoProducto.value = EstadoProducto.Inicial
+    /**
+     * Obtener producto por ID local
+     */
+    fun obtenerProductoPorIdLocal(id: String): Producto? {
+        return repository.obtenerProductoPorIdLocal(id)
     }
-}
-
-
-sealed class EstadoProducto {
-    object Inicial : EstadoProducto()
-    object Cargando : EstadoProducto()
-    data class Exito(val mensaje: String) : EstadoProducto()
-    data class Error(val mensaje: String) : EstadoProducto()
 }

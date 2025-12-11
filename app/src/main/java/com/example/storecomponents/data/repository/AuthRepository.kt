@@ -2,47 +2,88 @@ package com.example.storecomponents.data.repository
 
 import com.example.storecomponents.data.model.Usuarios
 import com.example.storecomponents.data.model.Userole
+import com.example.storecomponents.data.model.toDomain
+import com.example.storecomponents.data.model.dto.LoginRequest
+import com.example.storecomponents.data.model.dto.RegisterRequest
+import com.example.storecomponents.data.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class AuthRepository {
+
+    private val apiService = RetrofitClient.apiService
+
     // Estado del usuario actual (null si no hay sesión)
     private val _usuarioActual = MutableStateFlow<Usuarios?>(null)
     val usuarioActual: StateFlow<Usuarios?> = _usuarioActual
 
-    // usuarios de ejemplo para autenticación
-    private val usuariosList = mutableListOf(
-        Usuarios(id = 1, nombre = "admin", correo = "admin@store.com", role = Userole.ADMIN, password = "admin123", confirmarPassword = "admin123", direccion = ""),
-        Usuarios(id = 2, nombre = "cliente", correo = "cliente@store.com", role = Userole.CLIENT, password = "cliente123", confirmarPassword = "cliente123", direccion = "")
-    )
-
-    // Exponer la lista de usuarios como StateFlow para UI de gestión
-    private val _usuariosFlow = MutableStateFlow<List<Usuarios>>(usuariosList.toList())
+    // Lista de usuarios (para administración)
+    private val _usuariosFlow = MutableStateFlow<List<Usuarios>>(emptyList())
     val usuariosFlow: StateFlow<List<Usuarios>> = _usuariosFlow.asStateFlow()
 
-    // Función de login
-    fun login(email: String, password: String): Result<Usuarios> {
+    // ==================== AUTENTICACIÓN ====================
+
+    /**
+     * Login con conexión al backend
+     */
+    suspend fun login(username: String, password: String): Result<Usuarios> {
         return try {
-            val user = usuariosList.find { it.correo == email && it.password == password }
-            if (user != null) {
-                _usuarioActual.value = user
-                Result.success(user)
+            val request = LoginRequest(username = username, contrasena = password)
+            val response = apiService.login(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                val usuarioDTO = response.body()!!
+                // Determinar el rol basado en alguna lógica (puedes ajustar esto)
+                val role = if (username.lowercase().contains("admin")) {
+                    Userole.ADMIN
+                } else {
+                    Userole.CLIENT
+                }
+                val usuario = usuarioDTO.toDomain(role)
+                _usuarioActual.value = usuario
+                Result.success(usuario)
             } else {
-                Result.failure(Exception("Credenciales inválidas"))
+                when (response.code()) {
+                    401 -> Result.failure(Exception("Credenciales inválidas"))
+                    else -> Result.failure(Exception("Error al iniciar sesión: ${response.code()}"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Error de conexión: ${e.message}"))
         }
     }
 
-    fun registro(nuevo: Usuarios): Result<Usuarios> {
+    /**
+     * Registro con conexión al backend
+     */
+    suspend fun registro(
+        username: String,
+        nombreReal: String,
+        email: String,
+        password: String
+    ): Result<Usuarios> {
         return try {
-            usuariosList.add(nuevo)
-            _usuariosFlow.value = usuariosList.toList()
-            Result.success(nuevo)
+            val request = RegisterRequest(
+                username = username,
+                nombreReal = nombreReal,
+                email = email,
+                contrasena = password
+            )
+            val response = apiService.register(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                val usuarioDTO = response.body()!!
+                val usuario = usuarioDTO.toDomain(Userole.CLIENT)
+                Result.success(usuario)
+            } else {
+                when (response.code()) {
+                    409 -> Result.failure(Exception("El usuario ya existe"))
+                    else -> Result.failure(Exception("Error al registrar: ${response.code()}"))
+                }
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Error de conexión: ${e.message}"))
         }
     }
 
@@ -52,48 +93,60 @@ class AuthRepository {
 
     fun isLoggedIn(): Boolean = _usuarioActual.value != null
 
-    // Nuevo: Obtener todos los usuarios
-    fun obtenerTodosLosUsuarios(): List<Usuarios> = usuariosList.toList()
+    // ==================== GESTIÓN DE USUARIOS (ADMIN) ====================
 
-    // Nuevo: Agregar usuario
-    fun agregarUsuario(usuario: Usuarios): Result<Unit> {
+    /**
+     * Obtener todos los usuarios del backend
+     */
+    suspend fun obtenerTodosLosUsuarios(): Result<List<Usuarios>> {
         return try {
-            usuariosList.add(usuario)
-            _usuariosFlow.value = usuariosList.toList()
-            Result.success(Unit)
+            val response = apiService.getAllUsers()
+
+            if (response.isSuccessful && response.body() != null) {
+                val usuarios = response.body()!!.map { it.toDomain() }
+                _usuariosFlow.value = usuarios
+                Result.success(usuarios)
+            } else {
+                Result.failure(Exception("Error al obtener usuarios: ${response.code()}"))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Error de conexión: ${e.message}"))
         }
     }
 
-    // Nuevo: Actualizar usuario por id
-    fun actualizarUsuario(usuario: Usuarios): Result<Unit> {
+    /**
+     * Obtener usuario por ID
+     */
+    suspend fun obtenerUsuarioPorId(id: Long): Result<Usuarios> {
         return try {
-            val idx = usuariosList.indexOfFirst { it.id == usuario.id }
-            if (idx >= 0) {
-                usuariosList[idx] = usuario
-                _usuariosFlow.value = usuariosList.toList()
-                Result.success(Unit)
+            val response = apiService.getUserById(id)
+
+            if (response.isSuccessful && response.body() != null) {
+                val usuario = response.body()!!.toDomain()
+                Result.success(usuario)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Error de conexión: ${e.message}"))
         }
     }
 
-    // Nuevo: Eliminar usuario por id
-    fun eliminarUsuarioPorId(id: Int): Result<Unit> {
+    /**
+     * Obtener usuario por username
+     */
+    suspend fun obtenerUsuarioPorUsername(username: String): Result<Usuarios> {
         return try {
-            val removed = usuariosList.removeAll { it.id == id }
-            if (removed) {
-                _usuariosFlow.value = usuariosList.toList()
-                Result.success(Unit)
+            val response = apiService.getUserByUsername(username)
+
+            if (response.isSuccessful && response.body() != null) {
+                val usuario = response.body()!!.toDomain()
+                Result.success(usuario)
             } else {
                 Result.failure(Exception("Usuario no encontrado"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Error de conexión: ${e.message}"))
         }
     }
 }

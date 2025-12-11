@@ -31,7 +31,7 @@ data class AdminMenuItem(val title: String, val route: String, val icon: android
 @Composable
 fun AdminMenuScreen(
     menuItems: List<AdminMenuItem> = listOf(
-        AdminMenuItem("Gestionar productos", Screen.productos.route, Icons.Filled.ShoppingCart),
+        AdminMenuItem("Gestionar productos", Screen.gestionProductos.route, Icons.Filled.ShoppingCart),
         AdminMenuItem("Gestión de Ventas", Screen.Pedidos.route, Icons.AutoMirrored.Filled.List),
         AdminMenuItem("Usuarios", Screen.usuarios.route, Icons.Filled.Person)
     ),

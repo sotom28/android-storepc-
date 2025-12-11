@@ -23,48 +23,83 @@ class UsuariosViewModel(
         cargarUsuarios()
     }
 
-    private fun cargarUsuarios() {
+    /**
+     * Cargar usuarios desde el backend
+     */
+    fun cargarUsuarios() {
         viewModelScope.launch {
-            _usuarios.value = authRepository.obtenerTodosLosUsuarios()
+            _estado.value = UsuarioEstado.Cargando
+
+            val result = authRepository.obtenerTodosLosUsuarios()
+
+            if (result.isSuccess) {
+                _usuarios.value = result.getOrNull() ?: emptyList()
+                _estado.value = UsuarioEstado.Inicial
+            } else {
+                _estado.value = UsuarioEstado.Error(
+                    result.exceptionOrNull()?.message ?: "Error al cargar usuarios"
+                )
+            }
         }
     }
 
+    /**
+     * Agregar usuario (solo local por ahora)
+     * El backend no tiene endpoint específico para que un admin cree usuarios
+     * Se podría usar el endpoint de registro
+     */
     fun agregarUsuario(usuario: Usuarios) {
         viewModelScope.launch {
             _estado.value = UsuarioEstado.Cargando
-            val res = authRepository.agregarUsuario(usuario)
-            _estado.value = if (res.isSuccess) {
-                cargarUsuarios()
-                UsuarioEstado.Exito("Usuario agregado")
-            } else {
-                UsuarioEstado.Error(res.exceptionOrNull()?.message ?: "Error")
-            }
+
+            // Por ahora agregamos localmente
+            // TODO: Usar authRepository.registro() cuando se implemente para admin
+            val usuariosActuales = _usuarios.value.toMutableList()
+            usuariosActuales.add(usuario)
+            _usuarios.value = usuariosActuales
+
+            _estado.value = UsuarioEstado.Exito("Usuario agregado (solo local)")
         }
     }
 
+    /**
+     * Actualizar usuario (solo local por ahora)
+     * El backend no tiene endpoint para actualizar usuarios
+     */
     fun actualizarUsuario(usuario: Usuarios) {
         viewModelScope.launch {
             _estado.value = UsuarioEstado.Cargando
-            val res = authRepository.actualizarUsuario(usuario)
-            _estado.value = if (res.isSuccess) {
-                cargarUsuarios()
-                UsuarioEstado.Exito("Usuario actualizado")
+
+            // Por ahora actualizamos localmente
+            // TODO: Implementar cuando el backend tenga endpoint PUT
+            val usuariosActuales = _usuarios.value.toMutableList()
+            val index = usuariosActuales.indexOfFirst { it.id == usuario.id }
+
+            if (index != -1) {
+                usuariosActuales[index] = usuario
+                _usuarios.value = usuariosActuales
+                _estado.value = UsuarioEstado.Exito("Usuario actualizado (solo local)")
             } else {
-                UsuarioEstado.Error(res.exceptionOrNull()?.message ?: "Error")
+                _estado.value = UsuarioEstado.Error("Usuario no encontrado")
             }
         }
     }
 
-    fun eliminarUsuario(id: Int) {
+    /**
+     * Eliminar usuario (solo local por ahora)
+     * El backend no tiene endpoint para eliminar usuarios
+     * Parámetro cambiado a Long para compatibilidad
+     */
+    fun eliminarUsuario(id: Long) {
         viewModelScope.launch {
             _estado.value = UsuarioEstado.Cargando
-            val res = authRepository.eliminarUsuarioPorId(id)
-            _estado.value = if (res.isSuccess) {
-                cargarUsuarios()
-                UsuarioEstado.Exito("Usuario eliminado")
-            } else {
-                UsuarioEstado.Error(res.exceptionOrNull()?.message ?: "Error")
-            }
+
+            // Por ahora eliminamos localmente
+            // TODO: Implementar cuando el backend tenga endpoint DELETE
+            val usuariosActuales = _usuarios.value.filter { it.id != id }
+            _usuarios.value = usuariosActuales
+
+            _estado.value = UsuarioEstado.Exito("Usuario eliminado (solo local)")
         }
     }
 }
@@ -75,4 +110,3 @@ sealed class UsuarioEstado {
     data class Exito(val mensaje: String) : UsuarioEstado()
     data class Error(val mensaje: String) : UsuarioEstado()
 }
-

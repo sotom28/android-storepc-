@@ -18,56 +18,131 @@ import com.example.storecomponents.viewmodel.UsuarioEstado
 import com.example.storecomponents.viewmodel.UsuariosViewModel
 
 @Composable
-fun GestionUsuariosScreen(usuariosViewModel: UsuariosViewModel = viewModel(), onBack: () -> Unit = {}) {
+fun GestionUsuariosScreen(
+    usuariosViewModel: UsuariosViewModel = viewModel(),
+    onBack: () -> Unit = {}
+) {
     val usuarios by usuariosViewModel.usuarios.collectAsState()
     val estado by usuariosViewModel.estado.collectAsState()
 
-    var editingId by remember { mutableStateOf<Int?>(null) }
+    var editingId by remember { mutableStateOf<Long?>(null) }
     var nombre by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var direccion by remember { mutableStateOf("") }
     var role by remember { mutableStateOf(Userole.CLIENT) }
 
     LaunchedEffect(estado) {
-        // podrías mostrar Snackbar/Toast según estado
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
 
-        Text(text = "Gestión de Usuarios", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Gestión de Usuarios",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = nombre,
+            onValueChange = { nombre = it },
+            label = { Text("Nombre Completo") },
+            placeholder = { Text("Ej: Juan Pérez") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        // Role selector simple
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it.lowercase().trim() },
+            label = { Text("Nombre de Usuario") },
+            placeholder = { Text("Ej: juanperez") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = correo,
+            onValueChange = { correo = it },
+            label = { Text("Email") },
+            placeholder = { Text("usuario@ejemplo.com") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = direccion,
+            onValueChange = { direccion = it },
+            label = { Text("Dirección") },
+            placeholder = { Text("Opcional") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Role selector
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "Rol:", modifier = Modifier.padding(end = 8.dp))
-            RadioButton(selected = role == Userole.CLIENT, onClick = { role = Userole.CLIENT })
+            RadioButton(
+                selected = role == Userole.CLIENT,
+                onClick = { role = Userole.CLIENT }
+            )
             Text(text = "Cliente", modifier = Modifier.padding(end = 16.dp))
-            RadioButton(selected = role == Userole.ADMIN, onClick = { role = Userole.ADMIN })
+            RadioButton(
+                selected = role == Userole.ADMIN,
+                onClick = { role = Userole.ADMIN }
+            )
             Text(text = "Admin")
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
-                if (nombre.isBlank() || correo.isBlank() || password.isBlank()) return@Button
+                if (nombre.isBlank() || username.isBlank() || correo.isBlank() || password.isBlank()) {
+                    return@Button
+                }
+
                 if (editingId == null) {
-                    // generar id simple
-                    val nextId = (usuarios.maxOfOrNull { it.id } ?: 0) + 1
-                    val nuevo = Usuarios(nextId, nombre, correo, role, password, confirmarPassword = password)
+                    // Generar id simple (en producción esto lo maneja el backend)
+                    val nextId = (usuarios.maxOfOrNull { it.id } ?: 0L) + 1
+                    val nuevo = Usuarios(
+                        id = nextId,
+                        nombre = nombre.trim(),
+                        username = username.trim(),
+                        correo = correo.trim(),
+                        role = role,
+                        password = password,
+                        confirmarPassword = password,
+                        direccion = direccion.trim()
+                    )
                     usuariosViewModel.agregarUsuario(nuevo)
                 } else {
-                    val actualizado = Usuarios(editingId!!, nombre, correo, role, password, confirmarPassword = password)
+                    val actualizado = Usuarios(
+                        id = editingId!!,
+                        nombre = nombre.trim(),
+                        username = username.trim(),
+                        correo = correo.trim(),
+                        role = role,
+                        password = password,
+                        confirmarPassword = password,
+                        direccion = direccion.trim()
+                    )
                     usuariosViewModel.actualizarUsuario(actualizado)
                     editingId = null
                 }
-                // limpiar
+
+                // Limpiar formulario
                 nombre = ""
+                username = ""
                 correo = ""
                 password = ""
+                direccion = ""
                 role = Userole.CLIENT
 
             }) {
@@ -77,8 +152,10 @@ fun GestionUsuariosScreen(usuariosViewModel: UsuariosViewModel = viewModel(), on
             Button(onClick = {
                 editingId = null
                 nombre = ""
+                username = ""
                 correo = ""
                 password = ""
+                direccion = ""
                 role = Userole.CLIENT
             }) {
                 Text(text = "Cancelar")
@@ -91,34 +168,56 @@ fun GestionUsuariosScreen(usuariosViewModel: UsuariosViewModel = viewModel(), on
             }
         }
 
-        Divider()
+        HorizontalDivider()
 
-        Text(text = "Lista de Usuarios", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Lista de Usuarios",
+            style = MaterialTheme.typography.titleMedium
+        )
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(usuarios) { u ->
-                ListItem(
-                    headlineContent = { Text(u.nombre) },
-                    supportingContent = { Text(u.correo) },
-                    trailingContent = {
-                        Row {
-                            IconButton(onClick = {
-                                // editar
-                                editingId = u.id
-                                nombre = u.nombre
-                                correo = u.correo
-                                password = u.password
-                                role = u.role
-                            }) {
-                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ListItem(
+                        headlineContent = { Text(u.nombre) },
+                        supportingContent = {
+                            Column {
+                                Text("@${u.username}")
+                                Text(u.correo)
+                                Text("Rol: ${u.role.name}", style = MaterialTheme.typography.bodySmall)
                             }
-                            IconButton(onClick = { usuariosViewModel.eliminarUsuario(u.id) }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
+                        },
+                        trailingContent = {
+                            Row {
+                                IconButton(onClick = {
+                                    // Editar
+                                    editingId = u.id
+                                    nombre = u.nombre
+                                    username = u.username
+                                    correo = u.correo
+                                    password = u.password
+                                    direccion = u.direccion
+                                    role = u.role
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Editar"
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    usuariosViewModel.eliminarUsuario(u.id)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Eliminar"
+                                    )
+                                }
                             }
                         }
-                    }
-                )
-                Divider()
+                    )
+                }
             }
         }
     }
